@@ -1,0 +1,9 @@
+node_modules/
+dist/
+data/
+.refs/
+*.log
+service/firefly-panel.exe
+service/firefly-panel
+service/router/webdist/
+.DS_Store

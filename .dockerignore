@@ -1,0 +1,9 @@
+.git
+.refs
+data
+**/node_modules
+**/dist
+service/firefly-panel.exe
+service/firefly-panel
+service/router/webdist
+*.mp4

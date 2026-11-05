@@ -1,0 +1,50 @@
+import type { PanelConfig, SearchEngine } from '@/typings'
+
+export const defaultConfig: PanelConfig = {
+  logoText: 'Firefly Panel',
+  logoColor: '',
+  logoFontFamily: "'LXGW WenKai', 'Microsoft YaHei', sans-serif",
+  logoGlassEffect: false,
+  headerOpacity: 100,
+  cardGlassOpacity: 45,
+  footerOffsetY: 0,
+  footerHtml: '<span>Firefly Panel · 私有云导航</span>',
+  iconStyle: 0,
+  maxWidth: '1280',
+  maxWidthUnit: 'px',
+  marginTop: 8,
+  marginBottom: 4,
+  marginX: 24,
+  itemGap: 16,
+  showHeader: true,
+  showClock: true,
+  showSearch: true,
+  showFooter: true,
+  cardRadius: 18,
+  backgroundImage: '',
+  backgroundBlur: 0,
+  backgroundMask: 30,
+  clockShowSeconds: false,
+  clockShowDate: true,
+  searchPlaceholder: '搜索，或输入网址后回车',
+  searchOpenInNewTab: true,
+  themeMode: 'light',
+  accentColor: '#10b981',
+  headerAlign: 'center',
+}
+
+export const defaultSearchEngines: SearchEngine[] = [
+  { name: '百度', url: 'https://www.baidu.com/s?wd=', icon: '' },
+  { name: 'Google', url: 'https://www.google.com/search?q=', icon: '' },
+  { name: 'Bing', url: 'https://www.bing.com/search?q=', icon: '' },
+  { name: 'GitHub', url: 'https://github.com/search?q=', icon: '' },
+]
+
+export const fontOptions = [
+  { label: '系统默认', value: "'Inter', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif" },
+  { label: '霞鹜文楷', value: "'LXGW WenKai', 'Microsoft YaHei', sans-serif" },
+  { label: '思源黑体', value: "'Noto Sans SC', 'Microsoft YaHei', sans-serif" },
+  { label: '宋体 / 衬线', value: "'Noto Serif SC', 'Songti SC', SimSun, serif" },
+  { label: '等宽', value: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace" },
+  { label: '楷体', value: "'KaiTi', 'STKaiti', serif" },
+]

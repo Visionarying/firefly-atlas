@@ -1,0 +1,23 @@
+services:
+  firefly-panel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: firefly-panel:1.0.0
+    container_name: firefly-panel
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      TZ: Asia/Shanghai
+      DATA_DIR: /app/data
+      PORT: "3002"
+    volumes:
+      # database.db and uploads/ live here; back up this folder.
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3002/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

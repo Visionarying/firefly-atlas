@@ -1,0 +1,213 @@
+package api
+
+import (
+	"encoding/json"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+
+	"firefly-panel/global"
+	"firefly-panel/models"
+)
+
+type itemPayload struct {
+	ID              uint                 `json:"id"`
+	ItemIconGroupID uint                 `json:"itemIconGroupId"`
+	Title           string               `json:"title"`
+	Url             string               `json:"url"`
+	LanUrl          string               `json:"lanUrl"`
+	Description     string               `json:"description"`
+	OpenMethod      int                  `json:"openMethod"`
+	Icon            models.ItemIconIcon  `json:"icon"`
+	Sort            int                  `json:"sort"`
+}
+
+func SaveItemIcon(c *gin.Context) {
+	user := CurrentUser(c)
+	if user == nil {
+		Fail(c, "未登录")
+		return
+	}
+	var req itemPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, "参数错误")
+		return
+	}
+	req.Title = strings.TrimSpace(req.Title)
+	if req.Title == "" {
+		Fail(c, "请填写名称")
+		return
+	}
+	if req.Icon.ItemType == 0 {
+		req.Icon.ItemType = 2
+	}
+	if req.Icon.ItemType == 2 && req.Icon.Text == "" {
+		req.Icon.Text = strings.ToUpper(string([]rune(req.Title)[0:1]))
+	}
+	var group models.ItemIconGroup
+	if err := global.DB.Where("id = ? AND user_id = ?", req.ItemIconGroupID, user.ID).First(&group).Error; err != nil {
+		Fail(c, "分组不存在")
+		return
+	}
+	iconBytes, _ := json.Marshal(req.Icon)
+
+	if req.ID > 0 {
+		var item models.ItemIcon
+		if err := global.DB.Where("id = ? AND user_id = ?", req.ID, user.ID).First(&item).Error; err != nil {
+			Fail(c, "卡片不存在")
+			return
+		}
+		updates := map[string]interface{}{
+			"item_icon_group_id": req.ItemIconGroupID,
+			"title":              req.Title,
+			"url":                req.Url,
+			"lan_url":            req.LanUrl,
+			"description":        req.Description,
+			"open_method":        req.OpenMethod,
+			"icon_json":          string(iconBytes),
+			"sort":               req.Sort,
+		}
+		global.DB.Model(&item).Updates(updates)
+		req.ID = item.ID
+		OK(c, gin.H{"id": item.ID})
+		return
+	}
+
+	var maxSort int
+	global.DB.Model(&models.ItemIcon{}).
+		Where("user_id = ? AND item_icon_group_id = ?", user.ID, req.ItemIconGroupID).
+		Select("COALESCE(MAX(sort), -1)").Scan(&maxSort)
+
+	item := models.ItemIcon{
+		UserID:          user.ID,
+		ItemIconGroupID: req.ItemIconGroupID,
+		Title:           req.Title,
+		Url:             req.Url,
+		LanUrl:          req.LanUrl,
+		Description:     req.Description,
+		OpenMethod:      req.OpenMethod,
+		IconJSON:        string(iconBytes),
+		Sort:            maxSort + 1,
+	}
+	if err := global.DB.Create(&item).Error; err != nil {
+		Fail(c, "保存失败")
+		return
+	}
+	OK(c, gin.H{"id": item.ID})
+}
+
+func DeleteItemIcon(c *gin.Context) {
+	user := CurrentUser(c)
+	if user == nil {
+		Fail(c, "未登录")
+		return
+	}
+	id := c.Param("id")
+	res := global.DB.Where("id = ? AND user_id = ?", id, user.ID).Delete(&models.ItemIcon{})
+	if res.RowsAffected == 0 {
+		Fail(c, "卡片不存在")
+		return
+	}
+	OK(c, nil)
+}
+
+type sortReq struct {
+	IDs []uint `json:"ids"`
+}
+
+func SortItemIcons(c *gin.Context) {
+	user := CurrentUser(c)
+	if user == nil {
+		Fail(c, "未登录")
+		return
+	}
+	var req sortReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, "参数错误")
+		return
+	}
+	for i, id := range req.IDs {
+		global.DB.Model(&models.ItemIcon{}).
+			Where("id = ? AND user_id = ?", id, user.ID).
+			Update("sort", i)
+	}
+	OK(c, nil)
+}
+
+type groupPayload struct {
+	ID    uint   `json:"id"`
+	Title string `json:"title"`
+}
+
+func SaveItemIconGroup(c *gin.Context) {
+	user := CurrentUser(c)
+	if user == nil {
+		Fail(c, "未登录")
+		return
+	}
+	var req groupPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, "参数错误")
+		return
+	}
+	req.Title = strings.TrimSpace(req.Title)
+	if req.Title == "" {
+		Fail(c, "请填写分组名称")
+		return
+	}
+	if req.ID > 0 {
+		res := global.DB.Model(&models.ItemIconGroup{}).
+			Where("id = ? AND user_id = ?", req.ID, user.ID).
+			Update("title", req.Title)
+		if res.RowsAffected == 0 {
+			Fail(c, "分组不存在")
+			return
+		}
+		OK(c, gin.H{"id": req.ID})
+		return
+	}
+	var maxSort int
+	global.DB.Model(&models.ItemIconGroup{}).Where("user_id = ?", user.ID).
+		Select("COALESCE(MAX(sort), -1)").Scan(&maxSort)
+	group := models.ItemIconGroup{UserID: user.ID, Title: req.Title, Sort: maxSort + 1}
+	if err := global.DB.Create(&group).Error; err != nil {
+		Fail(c, "保存失败")
+		return
+	}
+	OK(c, gin.H{"id": group.ID})
+}
+
+func DeleteItemIconGroup(c *gin.Context) {
+	user := CurrentUser(c)
+	if user == nil {
+		Fail(c, "未登录")
+		return
+	}
+	var group models.ItemIconGroup
+	if err := global.DB.Where("id = ? AND user_id = ?", c.Param("id"), user.ID).First(&group).Error; err != nil {
+		Fail(c, "分组不存在")
+		return
+	}
+	global.DB.Where("item_icon_group_id = ? AND user_id = ?", group.ID, user.ID).Delete(&models.ItemIcon{})
+	global.DB.Delete(&group)
+	OK(c, nil)
+}
+
+func SortItemIconGroups(c *gin.Context) {
+	user := CurrentUser(c)
+	if user == nil {
+		Fail(c, "未登录")
+		return
+	}
+	var req sortReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, "参数错误")
+		return
+	}
+	for i, id := range req.IDs {
+		global.DB.Model(&models.ItemIconGroup{}).
+			Where("id = ? AND user_id = ?", id, user.ID).
+			Update("sort", i)
+	}
+	OK(c, nil)
+}
