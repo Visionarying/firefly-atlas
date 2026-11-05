@@ -40,6 +40,7 @@ type ItemIcon struct {
 	LanUrl          string       `gorm:"size:1024" json:"lanUrl"`
 	Description     string       `gorm:"size:512" json:"description"`
 	OpenMethod      int          `gorm:"default:1" json:"openMethod"`
+	HealthCheck     bool         `gorm:"default:false" json:"healthCheck"`
 	IconJSON        string       `gorm:"type:text" json:"-"`
 	Icon            ItemIconIcon `gorm:"-" json:"icon"`
 	Sort            int          `gorm:"default:0" json:"sort"`
@@ -66,16 +67,29 @@ type SystemSetting struct {
 }
 
 type File struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	UserID      uint      `gorm:"index" json:"userId"`
-	FileName    string    `gorm:"size:255" json:"fileName"`
-	Src         string    `gorm:"size:1024" json:"src"`
-	FileType    int       `gorm:"index" json:"fileType"` // 1 wallpaper, 2 icon
-	Size        int64     `json:"size"`
-	SyncStatus  int       `gorm:"default:0" json:"syncStatus"`
-	AuditRemark string    `gorm:"size:255" json:"auditRemark"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID          uint       `gorm:"primaryKey" json:"id"`
+	UserID      uint       `gorm:"index" json:"userId"`
+	FileName    string     `gorm:"size:255" json:"fileName"`
+	Src         string     `gorm:"size:1024" json:"src"`
+	FileType    int        `gorm:"index" json:"fileType"` // 1 wallpaper, 2 icon
+	Size        int64      `json:"size"`
+	SyncStatus  int        `gorm:"default:0" json:"syncStatus"` // 0 local, 1 pending, 2 synced, 3 rejected
+	AuditRemark string     `gorm:"size:255" json:"auditRemark"`
+	CloudKey    string     `gorm:"size:512" json:"cloudKey"`
+	CloudURL    string     `gorm:"size:1024" json:"cloudUrl"`
+	SyncedAt    *time.Time `json:"syncedAt"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
+}
+
+// CloudStorage holds the single encrypted-at-rest (file permissions) cloud
+// provider configuration row. It is deliberately kept out of SystemSetting so
+// normal users never receive provider secrets with the public panel payload.
+type CloudStorage struct {
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	ConfigJSON string    `gorm:"type:text" json:"-"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
 // DefaultPanelConfig is the fallback visual configuration for a fresh install.
@@ -99,6 +113,12 @@ const DefaultPanelConfig = `{
   "showClock": true,
   "showSearch": true,
   "showFooter": true,
+  "hideTitle": false,
+  "hideDescription": false,
+  "searchFilterItems": true,
+  "showSystemMonitor": false,
+  "systemMonitorShowTitle": true,
+  "systemMonitorPublic": false,
   "cardRadius": 18,
   "backgroundImage": "",
   "backgroundBlur": 0,

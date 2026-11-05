@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, h, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { NDropdown, useDialog, useMessage } from 'naive-ui'
+import { NDropdown, useDialog, useMessage, type DropdownOption } from 'naive-ui'
 import {
   Check,
+  ExternalLink,
+  Globe2,
+  House,
   LogIn,
   LogOut,
   Moon,
+  PanelTopOpen,
   Pencil,
   Plus,
   Settings,
   Sun,
+  Trash2,
   UserRound,
 } from 'lucide-vue-next'
 import Background from '@/components/Background.vue'
@@ -22,10 +27,13 @@ import LanBadge from '@/components/LanBadge.vue'
 import SettingsModal from '@/components/SettingsModal.vue'
 import EditItemModal from '@/components/EditItemModal.vue'
 import PromptModal from '@/components/PromptModal.vue'
+import NoticeBanner from '@/components/NoticeBanner.vue'
+import WebViewModal from '@/components/WebViewModal.vue'
+import SystemMonitor from '@/components/SystemMonitor.vue'
 import { usePanelStore } from '@/store/panel'
 import { useAuthStore } from '@/store/auth'
 import { panelApi } from '@/api'
-import { openExternal } from '@/utils/url'
+import { normalizeUrl, openExternal } from '@/utils/url'
 import type { ItemGroup, ItemIcon } from '@/typings'
 
 const panel = usePanelStore()
@@ -69,15 +77,131 @@ const userMenuOptions = [
   { label: '退出登录', key: 'logout' },
 ]
 
+/* ---------- right-click menu ---------- */
+const ctx = reactive<{ show: boolean; x: number; y: number; item: ItemIcon | null }>({
+  show: false,
+  x: 0,
+  y: 0,
+  item: null,
+})
+
+const ctxOptions = computed<DropdownOption[]>(() => {
+  const item = ctx.item
+  if (!item) return []
+  const options: DropdownOption[] = []
+  if (item.lanUrl) {
+    options.push({ label: '打开内网地址', key: 'lan', icon: () => h(House, { size: 15 }) })
+  }
+  if (item.url) {
+    options.push({ label: '打开公网地址', key: 'wan', icon: () => h(Globe2, { size: 15 }) })
+  }
+  options.push({ label: '在新窗口打开', key: 'newtab', icon: () => h(ExternalLink, { size: 15 }) })
+  options.push({ label: '页内弹窗打开', key: 'viewer', icon: () => h(PanelTopOpen, { size: 15 }) })
+  if (auth.isLoggedIn) {
+    options.push({ type: 'divider', key: 'd1' })
+    options.push({ label: '编辑卡片', key: 'edit', icon: () => h(Pencil, { size: 15 }) })
+    options.push({ label: '删除卡片', key: 'delete', icon: () => h(Trash2, { size: 15 }) })
+  }
+  return options
+})
+
+function openContext(item: ItemIcon, event: MouseEvent) {
+  event.preventDefault()
+  ctx.item = item
+  ctx.x = event.clientX
+  ctx.y = event.clientY
+  ctx.show = true
+}
+
+function openContextUrl(url: string, item: ItemIcon, forceNewTab = false) {
+  const target = normalizeUrl(url)
+  if (!target) return
+  if (forceNewTab) {
+    openExternal(target, true)
+    return
+  }
+  if (item.openMethod === 3) {
+    panel.openViewer(target, item.title)
+    return
+  }
+  openExternal(target, item.openMethod !== 2)
+}
+
+function onCtxSelect(key: string) {
+  const item = ctx.item
+  ctx.show = false
+  if (!item) return
+  if (key === 'lan') openContextUrl(item.lanUrl, item)
+  else if (key === 'wan') openContextUrl(item.url, item)
+  else if (key === 'newtab') openContextUrl(panel.resolveUrl(item), item, true)
+  else if (key === 'viewer') panel.openViewer(panel.resolveUrl(item), item.title)
+  else if (key === 'edit') openEditItem(item)
+  else if (key === 'delete') deleteItem(item)
+}
+
+const notice = computed(() => {
+  const settings = panel.settings
+  if (settings.notice_enabled !== '1' || !settings.notice_content) return null
+  const scope = settings.notice_scope || 'home'
+  if (scope !== 'home' && scope !== 'both') return null
+  return { title: settings.notice_title || '公告', content: settings.notice_content }
+})
+
+/* ---------- service health ---------- */
+const healthMap = ref<Record<number, { online: boolean; status?: number; latencyMs?: number }>>({})
+let healthTimer: number | undefined
+
+async function refreshHealth() {
+  if (!auth.isLoggedIn) return
+  const items = panel.items.filter((item) => item.healthCheck)
+  const urls: string[] = []
+  const byItem: Record<number, string> = {}
+  for (const item of items) {
+    const url = panel.resolveUrl(item)
+    if (!url) continue
+    urls.push(url)
+    byItem[item.id] = url
+  }
+  if (urls.length === 0) {
+    healthMap.value = {}
+    return
+  }
+  try {
+    const results = await panelApi.health(Array.from(new Set(urls)))
+    const byUrl = new Map(results.map((result) => [result.url, result]))
+    const next: typeof healthMap.value = {}
+    for (const [id, url] of Object.entries(byItem)) {
+      const result = byUrl.get(url)
+      if (result) {
+        next[Number(id)] = {
+          online: result.online,
+          status: result.status,
+          latencyMs: result.latencyMs,
+        }
+      }
+    }
+    healthMap.value = next
+  } catch {
+    /* health checks are best-effort */
+  }
+}
+
 onMounted(async () => {
   try {
     await panel.load()
     if (panel.publicBlocked) {
       router.replace('/login')
+      return
     }
+    await refreshHealth()
+    healthTimer = window.setInterval(() => void refreshHealth(), 60000)
   } catch {
     if (!auth.isLoggedIn) router.replace('/login')
   }
+})
+
+onUnmounted(() => {
+  if (healthTimer) window.clearInterval(healthTimer)
 })
 
 watch(
@@ -198,6 +322,7 @@ async function onSortItems(ids: number[]) {
 async function reload() {
   try {
     await panel.load()
+    await refreshHealth()
   } catch {
     /* ignore */
   }
@@ -251,12 +376,16 @@ function onUserMenu(key: string) {
     </div>
 
     <main class="page" :style="pageStyle">
+      <NoticeBanner v-if="notice" :title="notice.title" :content="notice.content" />
+
       <header v-if="config.showHeader" class="hero" :class="heroClass">
         <h1 class="logo" :style="logoStyle">{{ config.logoText }}</h1>
         <Clock v-if="config.showClock" />
       </header>
 
       <SearchBar v-if="config.showSearch" />
+
+      <SystemMonitor v-if="config.showSystemMonitor" />
 
       <div class="groups">
         <GroupSection
@@ -265,9 +394,11 @@ function onUserMenu(key: string) {
           :group="group"
           :items="panel.itemsByGroup.get(group.id) || []"
           :edit-mode="panel.editMode"
+          :health-map="healthMap"
           @open="onOpenItem"
           @edit="openEditItem"
           @delete="deleteItem"
+          @context="openContext"
           @add="openAddItem"
           @rename="openRenameGroup"
           @remove="removeGroup"
@@ -294,6 +425,17 @@ function onUserMenu(key: string) {
 
     <LanBadge v-if="!panel.publicBlocked" />
 
+    <n-dropdown
+      trigger="manual"
+      placement="bottom-start"
+      :show="ctx.show"
+      :x="ctx.x"
+      :y="ctx.y"
+      :options="ctxOptions"
+      @select="onCtxSelect"
+      @clickoutside="ctx.show = false"
+    />
+
     <div v-if="panel.loading && !panel.loaded" class="loading">
       <span class="spinner" />
     </div>
@@ -308,6 +450,8 @@ function onUserMenu(key: string) {
       :default-group-id="defaultGroupId"
       @saved="reload"
     />
+
+    <WebViewModal />
 
     <PromptModal
       v-model:show="promptShow"

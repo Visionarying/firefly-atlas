@@ -65,6 +65,7 @@ func UploadFile(c *gin.Context) {
 		Size:     file.Size,
 	}
 	global.DB.Create(&record)
+	go dualWriteNewFile(record.ID)
 	OK(c, record)
 }
 
@@ -75,9 +76,17 @@ func ListFiles(c *gin.Context) {
 		return
 	}
 	fileType, _ := strconv.Atoi(c.Query("fileType"))
-	q := global.DB.Where("user_id = ?", user.ID)
+	status, _ := strconv.Atoi(c.Query("syncStatus"))
+	scope := c.Query("scope")
+	q := global.DB.Model(&models.File{})
+	if user.Role != 1 || scope != "all" {
+		q = q.Where("user_id = ?", user.ID)
+	}
 	if fileType > 0 {
 		q = q.Where("file_type = ?", fileType)
+	}
+	if c.Query("syncStatus") != "" {
+		q = q.Where("sync_status = ?", status)
 	}
 	var files []models.File
 	q.Order("id desc").Find(&files)

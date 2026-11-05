@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { ChevronDown, Search, CornerDownLeft } from 'lucide-vue-next'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { ChevronDown, CornerDownLeft, Search } from 'lucide-vue-next'
+import AppIcon from './AppIcon.vue'
 import { usePanelStore } from '@/store/panel'
 import { isUrlLike, normalizeUrl, openExternal } from '@/utils/url'
 
@@ -13,9 +14,48 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const engineIndex = ref(Number(localStorage.getItem('firefly_engine') || 0))
 const engineOpen = ref(false)
 const focused = ref(false)
+const activeIndex = ref(-1)
 
 const currentEngine = computed(() => engines.value[engineIndex.value] || engines.value[0])
 const isDirect = computed(() => isUrlLike(keyword.value))
+
+const matches = computed(() => {
+  const query = keyword.value.trim().toLowerCase()
+  if (!query) return []
+  return panel.items
+    .filter((item) =>
+      `${item.title} ${item.description} ${item.url} ${item.lanUrl}`.toLowerCase().includes(query),
+    )
+    .slice(0, 8)
+})
+
+const filterVisible = computed(
+  () =>
+    !!config.searchFilterItems &&
+    focused.value &&
+    !engineOpen.value &&
+    keyword.value.trim() !== '' &&
+    matches.value.length > 0,
+)
+
+watch(keyword, () => {
+  activeIndex.value = -1
+})
+
+function matchHost(url: string): string {
+  try {
+    return new URL(normalizeUrl(url)).host
+  } catch {
+    return url
+  }
+}
+
+function openMatch(index: number) {
+  const item = matches.value[index]
+  if (!item) return
+  panel.openItem(item)
+  inputRef.value?.blur()
+}
 
 function pickEngine(index: number) {
   engineIndex.value = index
@@ -45,6 +85,23 @@ function onBlur() {
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     inputRef.value?.blur()
+    activeIndex.value = -1
+    return
+  }
+  if (!filterVisible.value) {
+    if (e.key === 'Enter') submit()
+    return
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    activeIndex.value = (activeIndex.value + 1) % matches.value.length
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    activeIndex.value = activeIndex.value <= 0 ? matches.value.length - 1 : activeIndex.value - 1
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (activeIndex.value >= 0) openMatch(activeIndex.value)
+    else submit()
   }
 }
 
@@ -79,7 +136,6 @@ onUnmounted(() => window.removeEventListener('keydown', onGlobalKey))
       spellcheck="false"
       @focus="onFocus"
       @blur="onBlur"
-      @keydown.enter="submit"
       @keydown="onKeydown"
     />
 
@@ -90,6 +146,31 @@ onUnmounted(() => window.removeEventListener('keydown', onGlobalKey))
     <button v-else class="search-btn" type="button" @click="submit">
       <Search :size="17" />
     </button>
+
+    <transition name="pop">
+      <div v-if="filterVisible" class="match-menu" @mousedown.prevent>
+        <div class="match-head">
+          <span>面板中的项目</span>
+          <span class="match-count">{{ matches.length }}</span>
+        </div>
+        <button
+          v-for="(item, index) in matches"
+          :key="item.id"
+          class="match-item"
+          :class="{ active: index === activeIndex }"
+          type="button"
+          @click="openMatch(index)"
+          @mouseenter="activeIndex = index"
+        >
+          <AppIcon :icon="item.icon" :title="item.title" :size="27" :radius="8" />
+          <span class="match-main">
+            <strong>{{ item.title }}</strong>
+            <em>{{ item.description || matchHost(item.url || item.lanUrl) }}</em>
+          </span>
+          <CornerDownLeft v-if="index === activeIndex" :size="13" class="match-enter" />
+        </button>
+      </div>
+    </transition>
 
     <transition name="pop">
       <div v-if="engineOpen" class="engine-menu" @mousedown.prevent>
@@ -112,6 +193,7 @@ onUnmounted(() => window.removeEventListener('keydown', onGlobalKey))
 <style scoped>
 .search-wrap {
   position: relative;
+  z-index: 20;
   display: flex;
   align-items: center;
   width: min(620px, 100%);
@@ -235,6 +317,88 @@ onUnmounted(() => window.removeEventListener('keydown', onGlobalKey))
 }
 .hint-text {
   letter-spacing: 0.04em;
+}
+
+.match-menu {
+  position: absolute;
+  z-index: 38;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: 336px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(var(--glass-rgb), 0.92);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: 0 22px 60px -24px rgba(var(--shadow-color), 0.5);
+}
+
+.match-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 9px 7px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  border-bottom: 1px dashed var(--line);
+  margin-bottom: 4px;
+}
+.match-count {
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(var(--glass-rgb), 0.5);
+}
+
+.match-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-soft);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.match-item.active,
+.match-item:hover {
+  background: color-mix(in srgb, var(--accent) 9%, rgba(var(--glass-rgb), 0.6));
+}
+
+.match-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.match-main strong {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.match-main em {
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.match-enter {
+  flex-shrink: 0;
+  color: var(--accent-strong, #059669);
 }
 
 .engine-menu {

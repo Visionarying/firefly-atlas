@@ -3,6 +3,7 @@ package router
 import (
 	"embed"
 	"io/fs"
+	"mime"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 var webDist embed.FS
 
 func Init() *gin.Engine {
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), Cors())
 	r.MaxMultipartMemory = 32 << 20
@@ -28,6 +30,9 @@ func Init() *gin.Engine {
 	{
 		v1.POST("/auth/login", api.Login)
 		v1.GET("/panel/public", api.PanelPublic)
+		v1.GET("/panel/site", api.SiteInfo)
+		v1.GET("/panel/monitor", api.MonitorPublic)
+		v1.GET("/panel/cloud/image", api.CloudImageProxy)
 		v1.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok", "version": global.Version}) })
 
 		auth := v1.Group("")
@@ -50,13 +55,43 @@ func Init() *gin.Engine {
 
 			auth.GET("/panel/backup/export", api.ExportBackup)
 			auth.POST("/panel/backup/import", api.ImportBackup)
+			auth.POST("/panel/import/bookmarks", api.ImportBookmarks)
+			auth.POST("/panel/health", api.CheckHealth)
 
 			auth.GET("/system/file/list", api.ListFiles)
 			auth.POST("/system/file/upload", api.UploadFile)
 			auth.DELETE("/system/file/:id", api.DeleteFile)
+			auth.POST("/system/file/batch-delete", api.BatchDeleteFiles)
+			auth.POST("/system/file/move", api.MoveFiles)
+			auth.POST("/system/file/rename", api.RenameFile)
+			auth.POST("/system/file/apply-sync", api.ApplySyncFiles)
+			auth.POST("/system/file/upload-cloud", api.UploadFilesToCloud)
+			auth.GET("/system/file/audit", api.AuditList)
+			auth.POST("/system/file/audit", api.AuditFiles)
+			auth.GET("/system/file/public-icons", api.PublicIcons)
+
+			auth.POST("/system/backup/export", api.ExportSiteBackup)
+			auth.POST("/system/backup/import", api.ImportSiteBackup)
+
+			auth.GET("/system/cloud/config", api.GetCloudConfig)
+			auth.POST("/system/cloud/config", api.SaveCloudConfig)
+			auth.POST("/system/cloud/test", api.TestCloudConfig)
+			auth.GET("/system/cloud/images", api.CloudListImages)
+			auth.POST("/system/cloud/sync", api.CloudSyncImages)
+			auth.POST("/system/cloud/sync-all", api.CloudSyncAll)
+			auth.POST("/system/cloud/delete", api.CloudDeleteImages)
+			auth.POST("/system/cloud/clear", api.CloudClearImages)
+			auth.GET("/system/cloud/backups", api.CloudListBackups)
+			auth.POST("/system/cloud/backup", api.CloudUploadBackup)
+			auth.POST("/system/cloud/backup/restore", api.CloudRestoreBackup)
+			auth.GET("/system/cloud/backup/download", api.CloudDownloadBackup)
+			auth.POST("/system/cloud/backup/delete", api.CloudDeleteBackup)
 
 			auth.GET("/system/setting", api.GetSettings)
 			auth.POST("/system/setting/save", api.SaveSettings)
+
+			auth.GET("/system/monitor", api.MonitorAuth)
+			auth.GET("/system/favicon", api.FetchFavicon)
 
 			auth.GET("/system/user/list", api.ListUsers)
 			auth.POST("/system/user/save", api.SaveUser)

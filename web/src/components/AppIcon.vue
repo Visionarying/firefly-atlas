@@ -34,7 +34,7 @@ const style = computed(() => ({
 </script>
 
 <template>
-  <span class="app-icon" :style="style">
+  <span class="app-icon" :class="{ 'has-svg': isSvg }" :style="style">
     <img
       v-if="isImage"
       :src="icon?.src"
@@ -60,6 +60,10 @@ const style = computed(() => ({
   letter-spacing: 0.02em;
   user-select: none;
   box-shadow: 0 8px 18px -10px rgba(23, 32, 51, 0.45);
+}
+.app-icon.has-svg {
+  color: var(--text-strong);
+  box-shadow: none;
 }
 .img {
   width: 100%;

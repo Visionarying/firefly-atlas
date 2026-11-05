@@ -8,12 +8,14 @@ import type { ItemIcon } from '@/typings'
 const props = defineProps<{
   item: ItemIcon
   editMode?: boolean
+  health?: { online: boolean; status?: number; latencyMs?: number }
 }>()
 
 const emit = defineEmits<{
   (e: 'open', newTab?: boolean): void
   (e: 'edit'): void
   (e: 'delete'): void
+  (e: 'context', event: MouseEvent): void
 }>()
 
 const panel = usePanelStore()
@@ -52,6 +54,28 @@ function onAux(e: MouseEvent) {
     emit('open', true)
   }
 }
+
+function onContext(e: MouseEvent) {
+  if (props.editMode) return
+  emit('context', e)
+}
+
+const showMeta = computed(
+  () =>
+    !config.hideTitle ||
+    (iconStyle.value === 0 && !config.hideDescription && !!props.item.description),
+)
+
+const healthClass = computed(() => {
+  if (!props.health) return 'unknown'
+  return props.health.online ? 'online' : 'offline'
+})
+
+const healthTitle = computed(() => {
+  if (!props.health) return '正在探测服务状态…'
+  const status = props.health.status ? `HTTP ${props.health.status}` : '无响应'
+  return `${props.health.online ? '在线' : '离线'} · ${status} · ${props.health.latencyMs}ms`
+})
 </script>
 
 <template>
@@ -59,8 +83,10 @@ function onAux(e: MouseEvent) {
     class="nav-card"
     :class="[`style-${iconStyle}`, { editing: editMode }]"
     :style="cardStyle"
+    :title="config.hideTitle ? item.title : undefined"
     @click="emit('open')"
     @auxclick="onAux"
+    @contextmenu.prevent="onContext"
   >
     <button v-if="editMode" class="drag-handle" title="拖动排序" @click.stop>
       <GripVertical :size="14" />
@@ -82,9 +108,11 @@ function onAux(e: MouseEvent) {
       :radius="iconStyle === 1 ? 16 : iconStyle === 2 ? 9 : 12"
     />
 
-    <div class="meta">
-      <h3 class="title" :class="{ ellipsis: iconStyle !== 0 }">{{ item.title }}</h3>
-      <p v-if="iconStyle === 0 && item.description" class="desc">{{ item.description }}</p>
+    <span v-if="item.healthCheck" class="health-dot" :class="healthClass" :title="healthTitle" />
+
+    <div v-if="showMeta" class="meta">
+      <h3 v-if="!config.hideTitle" class="title" :class="{ ellipsis: iconStyle !== 0 }">{{ item.title }}</h3>
+      <p v-if="iconStyle === 0 && !config.hideDescription && item.description" class="desc">{{ item.description }}</p>
       <span v-if="item.lanUrl" class="lan-dot" title="已配置内网地址" />
     </div>
   </article>
@@ -181,6 +209,29 @@ function onAux(e: MouseEvent) {
   opacity: 0.45;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
   transition: opacity 0.2s;
+}
+
+.health-dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.16);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.health-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16);
+}
+.health-dot.offline {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+}
+.nav-card.editing .health-dot {
+  display: none;
 }
 
 /* Large icon style */

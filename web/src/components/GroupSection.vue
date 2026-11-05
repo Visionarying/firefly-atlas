@@ -10,6 +10,7 @@ const props = defineProps<{
   group: ItemGroup
   items: ItemIcon[]
   editMode?: boolean
+  healthMap?: Record<number, { online: boolean; status?: number; latencyMs?: number }>
 }>()
 
 const emit = defineEmits<{
@@ -20,6 +21,7 @@ const emit = defineEmits<{
   (e: 'rename', group: ItemGroup): void
   (e: 'remove', group: ItemGroup): void
   (e: 'sort', ids: number[]): void
+  (e: 'context', item: ItemIcon, event: MouseEvent): void
 }>()
 
 const panel = usePanelStore()
@@ -79,9 +81,11 @@ function onEnd() {
         :key="item.id"
         :item="item"
         :edit-mode="editMode"
+        :health="healthMap?.[item.id]"
         @open="(newTab?: boolean) => emit('open', item, newTab)"
         @edit="emit('edit', item)"
         @delete="emit('delete', item)"
+        @context="(event: MouseEvent) => emit('context', item, event)"
       />
     </VueDraggable>
   </section>

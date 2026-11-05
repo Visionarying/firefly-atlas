@@ -25,6 +25,7 @@ export const usePanelStore = defineStore('panel', () => {
   const loading = ref(false)
   const publicBlocked = ref(false)
   const editMode = ref(false)
+  const viewer = ref<{ url: string; title: string } | null>(null)
 
   const lanMode = ref<LanMode>((localStorage.getItem('firefly_lan_mode') as LanMode) || 'auto')
   const lanReachable = ref(false)
@@ -113,7 +114,22 @@ export const usePanelStore = defineStore('panel', () => {
   }
 
   function openItem(item: ItemIcon) {
-    openExternal(resolveUrl(item), item.openMethod !== 2)
+    const url = resolveUrl(item)
+    if (!url) return
+    if (item.openMethod === 3) {
+      viewer.value = { url, title: item.title }
+      return
+    }
+    openExternal(url, item.openMethod !== 2)
+  }
+
+  function openViewer(url: string, title = '') {
+    if (!url) return
+    viewer.value = { url, title }
+  }
+
+  function closeViewer() {
+    viewer.value = null
   }
 
   function setLanMode(mode: LanMode) {
@@ -167,6 +183,7 @@ export const usePanelStore = defineStore('panel', () => {
     loading,
     publicBlocked,
     editMode,
+    viewer,
     lanMode,
     lanReachable,
     lanProbing,
@@ -179,6 +196,8 @@ export const usePanelStore = defineStore('panel', () => {
     detectLan,
     resolveUrl,
     openItem,
+    openViewer,
+    closeViewer,
     setLanMode,
     cycleLanMode,
     saveNow,

@@ -12,14 +12,16 @@ RUN npm run build
 FROM golang:1.23-alpine AS service
 WORKDIR /app/service
 ARG GOPROXY=https://goproxy.cn,direct
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 ENV GOPROXY=${GOPROXY}
 COPY service/go.mod service/go.sum ./
 RUN go mod download
 COPY service/ ./
 # The Go binary embeds the SPA, so the Vite output must be in place before compiling.
 COPY --from=web /app/web/dist ./router/webdist
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
-    -ldflags="-s -w -X firefly-panel/global.Version=1.0.0" \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -buildvcs=false \
+    -ldflags="-s -w -X firefly-panel/global.Version=1.1.0" \
     -o /firefly-panel .
 
 # ---------- runtime ----------

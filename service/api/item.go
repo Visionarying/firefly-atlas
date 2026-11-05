@@ -11,15 +11,16 @@ import (
 )
 
 type itemPayload struct {
-	ID              uint                 `json:"id"`
-	ItemIconGroupID uint                 `json:"itemIconGroupId"`
-	Title           string               `json:"title"`
-	Url             string               `json:"url"`
-	LanUrl          string               `json:"lanUrl"`
-	Description     string               `json:"description"`
-	OpenMethod      int                  `json:"openMethod"`
-	Icon            models.ItemIconIcon  `json:"icon"`
-	Sort            int                  `json:"sort"`
+	ID              uint                `json:"id"`
+	ItemIconGroupID uint                `json:"itemIconGroupId"`
+	Title           string              `json:"title"`
+	Url             string              `json:"url"`
+	LanUrl          string              `json:"lanUrl"`
+	Description     string              `json:"description"`
+	OpenMethod      int                 `json:"openMethod"`
+	HealthCheck     bool                `json:"healthCheck"`
+	Icon            models.ItemIconIcon `json:"icon"`
+	Sort            int                 `json:"sort"`
 }
 
 func SaveItemIcon(c *gin.Context) {
@@ -64,6 +65,7 @@ func SaveItemIcon(c *gin.Context) {
 			"lan_url":            req.LanUrl,
 			"description":        req.Description,
 			"open_method":        req.OpenMethod,
+			"health_check":       req.HealthCheck,
 			"icon_json":          string(iconBytes),
 			"sort":               req.Sort,
 		}
@@ -86,6 +88,7 @@ func SaveItemIcon(c *gin.Context) {
 		LanUrl:          req.LanUrl,
 		Description:     req.Description,
 		OpenMethod:      req.OpenMethod,
+		HealthCheck:     req.HealthCheck,
 		IconJSON:        string(iconBytes),
 		Sort:            maxSort + 1,
 	}

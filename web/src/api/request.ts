@@ -53,4 +53,5 @@ type Http = {
 }
 
 const http = instance as unknown as Http
+export const rawHttp = instance
 export default http

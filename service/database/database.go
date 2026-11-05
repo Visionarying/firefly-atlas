@@ -34,6 +34,7 @@ func Init() error {
 		&models.UserConfig{},
 		&models.SystemSetting{},
 		&models.File{},
+		&models.CloudStorage{},
 	); err != nil {
 		return err
 	}
@@ -81,10 +82,17 @@ func seed() {
 		{ConfigName: "public_visit_mode", Title: "公开访客模式", Content: "0"},
 		{ConfigName: "site_title", Title: "站点标题", Content: "Firefly Panel"},
 		{ConfigName: "allow_register", Title: "允许注册", Content: "0"},
+		{ConfigName: "custom_css", Title: "自定义 CSS", Content: ""},
+		{ConfigName: "custom_js", Title: "自定义 JS", Content: ""},
+		{ConfigName: "notice_enabled", Title: "公告开关", Content: "0"},
+		{ConfigName: "notice_title", Title: "公告标题", Content: ""},
+		{ConfigName: "notice_content", Title: "公告内容", Content: ""},
+		{ConfigName: "notice_scope", Title: "公告位置", Content: "home"},
 	}
 	for _, s := range settings {
-		var exist models.SystemSetting
-		if db.Where("config_name = ?", s.ConfigName).First(&exist).Error != nil {
+		var count int64
+		db.Model(&models.SystemSetting{}).Where("config_name = ?", s.ConfigName).Count(&count)
+		if count == 0 {
 			db.Create(&s)
 		}
 	}

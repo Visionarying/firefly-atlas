@@ -17,12 +17,12 @@ type backupItem struct {
 }
 
 type BackupData struct {
-	Version       string                `json:"version"`
-	ExportedAt    string                `json:"exportedAt"`
-	PanelConfig   json.RawMessage       `json:"panelConfig"`
-	SearchEngines json.RawMessage       `json:"searchEngines"`
+	Version       string                 `json:"version"`
+	ExportedAt    string                 `json:"exportedAt"`
+	PanelConfig   json.RawMessage        `json:"panelConfig"`
+	SearchEngines json.RawMessage        `json:"searchEngines"`
 	Groups        []models.ItemIconGroup `json:"groups"`
-	Items         []backupItem          `json:"items"`
+	Items         []backupItem           `json:"items"`
 	Settings      []models.SystemSetting `json:"settings"`
 }
 

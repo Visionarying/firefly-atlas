@@ -4,8 +4,9 @@ import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck, UserRound } from 'lucide-vue-next'
 import Background from '@/components/Background.vue'
+import NoticeBanner from '@/components/NoticeBanner.vue'
 import { useAuthStore } from '@/store/auth'
-import { panelApi } from '@/api'
+import { systemApi } from '@/api'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -16,11 +17,23 @@ const password = ref('')
 const showPassword = ref(false)
 const submitting = ref(false)
 const publicMode = ref(false)
+const siteTitle = ref('')
+const notice = ref<{ title: string; content: string } | null>(null)
 
 onMounted(async () => {
   try {
-    const data = await panelApi.public()
+    const data = await systemApi.site()
     publicMode.value = !!data.publicVisitMode
+    siteTitle.value = data.settings.site_title || ''
+    if (data.settings.notice_enabled === '1' && data.settings.notice_content) {
+      const scope = data.settings.notice_scope || 'home'
+      if (scope === 'login' || scope === 'both') {
+        notice.value = {
+          title: data.settings.notice_title || '公告',
+          content: data.settings.notice_content,
+        }
+      }
+    }
   } catch {
     publicMode.value = false
   }
@@ -50,10 +63,16 @@ async function submit() {
 
     <div class="brand">
       <span class="brand-mark"><span /></span>
-      <span class="brand-text">Firefly Panel</span>
+      <span class="brand-text">{{ siteTitle || 'Firefly Panel' }}</span>
     </div>
 
     <div class="login-wrap">
+      <NoticeBanner
+        v-if="notice"
+        class="login-notice"
+        :title="notice.title"
+        :content="notice.content"
+      />
       <div class="login-card">
         <div class="logo-badge">F</div>
         <h1>欢迎回来</h1>
@@ -172,6 +191,10 @@ async function submit() {
   width: 100%;
   max-width: 400px;
   animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-notice {
+  margin-bottom: 12px;
 }
 
 .login-card {

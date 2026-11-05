@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { Maximize2, Minimize2, X } from 'lucide-vue-next'
 
 const props = withDefaults(
@@ -36,6 +36,7 @@ const prevRect = ref<{ x: number; y: number; w: number; h: number } | null>(null
 const maximized = ref(false)
 const dragging = ref(false)
 const resizing = ref(false)
+const bodyRef = ref<HTMLElement | null>(null)
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
@@ -165,6 +166,9 @@ watch(
     if (value) {
       initRect()
       maximized.value = false
+      void nextTick(() => {
+        if (bodyRef.value) bodyRef.value.scrollTop = 0
+      })
     }
   },
 )
@@ -207,7 +211,7 @@ onUnmounted(() => {
             </div>
           </header>
 
-          <div class="rcm-body" :class="bodyClass">
+          <div ref="bodyRef" class="rcm-body" :class="bodyClass">
             <slot />
           </div>
 

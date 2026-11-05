@@ -10,9 +10,9 @@ import (
 )
 
 type PanelData struct {
-	PublicVisitMode bool              `json:"publicVisitMode"`
-	PanelConfig     json.RawMessage   `json:"panelConfig"`
-	SearchEngines   json.RawMessage   `json:"searchEngines"`
+	PublicVisitMode bool                   `json:"publicVisitMode"`
+	PanelConfig     json.RawMessage        `json:"panelConfig"`
+	SearchEngines   json.RawMessage        `json:"searchEngines"`
 	Groups          []models.ItemIconGroup `json:"groups"`
 	Items           []models.ItemIcon      `json:"items"`
 	Settings        map[string]string      `json:"settings"`

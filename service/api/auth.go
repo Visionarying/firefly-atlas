@@ -1,6 +1,10 @@
 package api
 
 import (
+	"fmt"
+	"sync"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
@@ -14,7 +18,74 @@ type loginReq struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// Simple in-memory brute-force protection. Restarting the process clears it.
+type loginAttempt struct {
+	fails       int
+	lockedUntil time.Time
+	lastSeen    time.Time
+}
+
+const (
+	loginMaxFails   = 5
+	loginLockPeriod = 60 * time.Second
+	loginAttemptTTL = 30 * time.Minute
+)
+
+var (
+	loginMu       sync.Mutex
+	loginAttempts = map[string]*loginAttempt{}
+)
+
+func loginLockRemaining(ip string) time.Duration {
+	loginMu.Lock()
+	defer loginMu.Unlock()
+	attempt, ok := loginAttempts[ip]
+	if !ok {
+		return 0
+	}
+	if time.Now().Before(attempt.lockedUntil) {
+		return time.Until(attempt.lockedUntil)
+	}
+	return 0
+}
+
+func recordLoginFailure(ip string) {
+	loginMu.Lock()
+	defer loginMu.Unlock()
+	now := time.Now()
+	attempt, ok := loginAttempts[ip]
+	if !ok {
+		attempt = &loginAttempt{}
+		loginAttempts[ip] = attempt
+	}
+	attempt.lastSeen = now
+	attempt.fails++
+	if attempt.fails >= loginMaxFails {
+		attempt.fails = 0
+		attempt.lockedUntil = now.Add(loginLockPeriod)
+	}
+	if len(loginAttempts) > 2048 {
+		for key, item := range loginAttempts {
+			if now.Sub(item.lastSeen) > loginAttemptTTL {
+				delete(loginAttempts, key)
+			}
+		}
+	}
+}
+
+func clearLoginFailures(ip string) {
+	loginMu.Lock()
+	delete(loginAttempts, ip)
+	loginMu.Unlock()
+}
+
 func Login(c *gin.Context) {
+	ip := c.ClientIP()
+	if remaining := loginLockRemaining(ip); remaining > 0 {
+		Fail(c, fmt.Sprintf("尝试次数过多，请 %d 秒后再试", int(remaining.Seconds())+1))
+		return
+	}
+
 	var req loginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, "请输入用户名和密码")
@@ -23,10 +94,12 @@ func Login(c *gin.Context) {
 
 	var user models.User
 	if err := global.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		recordLoginFailure(ip)
 		Fail(c, "用户名或密码错误")
 		return
 	}
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) != nil {
+		recordLoginFailure(ip)
 		Fail(c, "用户名或密码错误")
 		return
 	}
@@ -35,6 +108,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	clearLoginFailures(ip)
 	token := database.RandomToken(32)
 	global.DB.Model(&user).Update("token", token)
 

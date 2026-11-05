@@ -1,12 +1,21 @@
-import http from './request'
+import http, { rawHttp } from './request'
 import type {
+  AuditFile,
   BackupPayload,
+  CloudBackup,
+  CloudConfig,
+  CloudImage,
+  CloudSyncResult,
   FileRecord,
+  HealthResult,
   ItemGroup,
   ItemIcon,
+  MonitorData,
   PanelConfig,
   PanelData,
+  RestoreStats,
   SearchEngine,
+  SiteInfo,
   User,
 } from '@/typings'
 
@@ -31,20 +40,41 @@ export const panelApi = {
     http.post<{ id: number }>('/panel/itemIconGroup/save', group),
   deleteGroup: (id: number) => http.delete(`/panel/itemIconGroup/${id}`),
   sortGroups: (ids: number[]) => http.post('/panel/itemIconGroup/sort', { ids }),
+  health: (urls: string[]) => http.post<HealthResult[]>('/panel/health', { urls }),
+  importBookmarks: (form: FormData) =>
+    http.post<{ groups: number; items: number; skipped: number; total: number }>(
+      '/panel/import/bookmarks',
+      form,
+      { timeout: 120000 },
+    ),
 }
 
 export const fileApi = {
-  list: (fileType?: number) =>
-    http.get<FileRecord[]>('/system/file/list', { params: fileType ? { fileType } : {} }),
+  list: (fileType?: number, scope?: 'all') =>
+    http.get<FileRecord[]>('/system/file/list', {
+      params: { ...(fileType ? { fileType } : {}), ...(scope ? { scope } : {}) },
+    }),
   upload: (file: File, fileType: 1 | 2) => {
     const form = new FormData()
     form.append('file', file)
     form.append('fileType', String(fileType))
-    return http.post<FileRecord>('/system/file/upload', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    return http.post<FileRecord>('/system/file/upload', form)
   },
   remove: (id: number) => http.delete(`/system/file/${id}`),
+  batchRemove: (ids: number[]) => http.post<{ deleted: number }>('/system/file/batch-delete', { ids }),
+  move: (ids: number[], fileType: 1 | 2) =>
+    http.post<{ moved: number }>('/system/file/move', { ids, fileType }),
+  rename: (id: number, fileName: string) => http.post('/system/file/rename', { id, fileName }),
+  applySync: (ids: number[]) => http.post<{ pending: number }>('/system/file/apply-sync', { ids }),
+  uploadCloud: (ids: number[]) =>
+    http.post<{ success: number; failed: string[] }>('/system/file/upload-cloud', { ids }),
+  auditList: () => http.get<AuditFile[]>('/system/file/audit'),
+  audit: (ids: number[], action: 'approve' | 'reject') =>
+    http.post<{ success?: number; rejected?: number; failed?: string[] }>('/system/file/audit', {
+      ids,
+      action,
+    }),
+  publicIcons: () => http.get<FileRecord[]>('/system/file/public-icons'),
 }
 
 export const settingApi = {
@@ -69,4 +99,49 @@ export const userApi = {
 export const backupApi = {
   export: () => http.get<BackupPayload>('/panel/backup/export'),
   import: (data: BackupPayload) => http.post('/panel/backup/import', data),
+}
+
+export const siteBackupApi = {
+  export: (password: string): Promise<Blob> =>
+    rawHttp
+      .post('/system/backup/export', { password }, { responseType: 'blob', timeout: 300000 })
+      .then((response) => response.data),
+  import: (file: File, password: string) => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('password', password)
+    return http.post<RestoreStats>('/system/backup/import', form, { timeout: 600000 })
+  },
+}
+
+export const cloudApi = {
+  getConfig: () => http.get<CloudConfig>('/system/cloud/config'),
+  saveConfig: (config: CloudConfig) => http.post('/system/cloud/config', { config }),
+  test: (config: CloudConfig) =>
+    http.post<{ private: boolean; description: string }>('/system/cloud/test', config),
+  listImages: () => http.get<CloudImage[]>('/system/cloud/images'),
+  sync: (keys: string[]) => http.post<CloudSyncResult>('/system/cloud/sync', { keys }),
+  syncAll: () => http.post<CloudSyncResult>('/system/cloud/sync-all'),
+  deleteImages: (keys: string[]) =>
+    http.post<{ success: number; failed: string[] }>('/system/cloud/delete', { keys }),
+  clearImages: () => http.post<{ success: number; total: number }>('/system/cloud/clear'),
+  listBackups: () => http.get<CloudBackup[]>('/system/cloud/backups'),
+  uploadBackup: (password: string) =>
+    http.post<{ key: string; name: string; size: number; url: string }>('/system/cloud/backup', {
+      password,
+    }),
+  restoreBackup: (key: string, password: string) =>
+    http.post<RestoreStats>('/system/cloud/backup/restore', { key, password }),
+  downloadBackup: (key: string): Promise<Blob> =>
+    rawHttp
+      .get('/system/cloud/backup/download', { params: { key }, responseType: 'blob' })
+      .then((response) => response.data),
+  deleteBackups: (keys: string[]) => http.post('/system/cloud/backup/delete', { keys }),
+}
+
+export const systemApi = {
+  site: () => http.get<SiteInfo>('/panel/site'),
+  monitor: () => http.get<MonitorData | null>('/system/monitor'),
+  publicMonitor: () => http.get<MonitorData | null>('/panel/monitor'),
+  favicon: (url: string) => http.get<FileRecord>('/system/favicon', { params: { url } }),
 }
