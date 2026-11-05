@@ -250,7 +250,7 @@ func ImportBookmarks(c *gin.Context) {
 			}
 			icon := models.ItemIconIcon{
 				ItemType:        2,
-				Text:            strings.ToUpper(string([]rune(b.Title)[0:1])),
+				Text:            firstRuneTitle(b.Title),
 				BackgroundColor: bookmarkGradients[createdItems%len(bookmarkGradients)],
 			}
 			iconBytes, _ := json.Marshal(icon)

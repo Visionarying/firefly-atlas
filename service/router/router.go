@@ -3,8 +3,10 @@ package router
 import (
 	"embed"
 	"io/fs"
+	"log"
 	"mime"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -18,11 +20,40 @@ import (
 //go:embed all:webdist
 var webDist embed.FS
 
+// trustedProxies reads the optional TRUSTED_PROXIES environment variable
+// (comma separated CIDRs or IPs). Returning nil tells Gin to ignore
+// X-Forwarded-For entirely.
+func trustedProxies() []string {
+	raw := strings.TrimSpace(os.Getenv("TRUSTED_PROXIES"))
+	if raw == "" {
+		return nil
+	}
+	out := make([]string, 0, 4)
+	for _, part := range strings.Split(raw, ",") {
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 func Init() *gin.Engine {
 	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), Cors())
 	r.MaxMultipartMemory = 32 << 20
+
+	// Gin trusts every proxy by default, which lets any client spoof
+	// X-Forwarded-For and escape the login rate limiter (it keys on ClientIP).
+	// Only the deployments that list their reverse proxy in TRUSTED_PROXIES get
+	// forwarded headers honoured; everything else uses the socket address.
+	if err := r.SetTrustedProxies(trustedProxies()); err != nil {
+		log.Printf("[firefly-panel] TRUSTED_PROXIES 无效，已改为不信任任何代理: %v", err)
+		_ = r.SetTrustedProxies(nil)
+	}
 
 	r.Static("/uploads", filepath.Join(global.DataDir, "uploads"))
 

@@ -35,6 +35,15 @@ jobs:
         with:
           go-version: '1.23'
           cache-dependency-path: service/go.sum
+      - name: Stub the embedded SPA
+        # router.go declares `//go:embed all:webdist`, but webdist is a build
+        # artifact and is git-ignored, so it does not exist on a fresh checkout.
+        # The Dockerfile fills it with the real Vite bundle; a placeholder is
+        # enough for vet and build to succeed here.
+        working-directory: service
+        run: |
+          mkdir -p router/webdist
+          printf '<!doctype html><title>firefly-panel ci stub</title>\n' > router/webdist/index.html
       - name: Vet
         working-directory: service
         run: go vet ./...

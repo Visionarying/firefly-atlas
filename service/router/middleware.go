@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -37,12 +38,28 @@ func LoginInterceptor() gin.HandlerFunc {
 	}
 }
 
+// sameOriginHost reports whether the request Origin points back at the host that
+// served it. Reverse proxies usually forward the original Host header, so this
+// matches the normal single-node deployment as well.
+func sameOriginHost(origin, host string) bool {
+	u, err := url.Parse(origin)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	return strings.EqualFold(u.Host, host)
+}
+
+// Cors only echoes an Origin that belongs to the panel itself. Reflecting every
+// Origin together with Allow-Credentials would let any third-party website read
+// authenticated API responses in a visitor's browser.
 func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		origin := c.GetHeader("Origin")
-		if origin != "" {
-			c.Header("Access-Control-Allow-Origin", origin)
-			c.Header("Access-Control-Allow-Credentials", "true")
+		if origin := c.GetHeader("Origin"); origin != "" {
+			c.Header("Vary", "Origin")
+			if sameOriginHost(origin, c.Request.Host) {
+				c.Header("Access-Control-Allow-Origin", origin)
+				c.Header("Access-Control-Allow-Credentials", "true")
+			}
 		}
 		c.Header("Access-Control-Allow-Headers", "Content-Type, token, Authorization")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")

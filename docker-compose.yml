@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Must match the image tag below; the binary reports this version.
+        VERSION: "1.1.0"
     image: firefly-panel:1.1.0
     container_name: firefly-panel
     restart: unless-stopped

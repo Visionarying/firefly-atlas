@@ -14,6 +14,10 @@ WORKDIR /app/service
 ARG GOPROXY=https://goproxy.cn,direct
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
+# Single source of truth for the reported version. `docker build --build-arg
+# VERSION=x.y.z` (or the compose build args) overrides it, so cutting a release
+# no longer requires editing the ldflags line by hand.
+ARG VERSION=1.1.0
 ENV GOPROXY=${GOPROXY}
 COPY service/go.mod service/go.sum ./
 RUN go mod download
@@ -21,7 +25,7 @@ COPY service/ ./
 # The Go binary embeds the SPA, so the Vite output must be in place before compiling.
 COPY --from=web /app/web/dist ./router/webdist
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -buildvcs=false \
-    -ldflags="-s -w -X firefly-panel/global.Version=1.1.0" \
+    -ldflags="-s -w -X firefly-panel/global.Version=${VERSION}" \
     -o /firefly-panel .
 
 # ---------- runtime ----------

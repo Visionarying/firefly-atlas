@@ -67,13 +67,18 @@ export const fileApi = {
   rename: (id: number, fileName: string) => http.post('/system/file/rename', { id, fileName }),
   applySync: (ids: number[]) => http.post<{ pending: number }>('/system/file/apply-sync', { ids }),
   uploadCloud: (ids: number[]) =>
-    http.post<{ success: number; failed: string[] }>('/system/file/upload-cloud', { ids }),
+    http.post<{ success: number; failed: string[] }>(
+      '/system/file/upload-cloud',
+      { ids },
+      { timeout: 600000 },
+    ),
   auditList: () => http.get<AuditFile[]>('/system/file/audit'),
   audit: (ids: number[], action: 'approve' | 'reject') =>
-    http.post<{ success?: number; rejected?: number; failed?: string[] }>('/system/file/audit', {
-      ids,
-      action,
-    }),
+    http.post<{ success?: number; rejected?: number; failed?: string[] }>(
+      '/system/file/audit',
+      { ids, action },
+      { timeout: 600000 },
+    ),
   publicIcons: () => http.get<FileRecord[]>('/system/file/public-icons'),
 }
 
@@ -118,25 +123,43 @@ export const cloudApi = {
   getConfig: () => http.get<CloudConfig>('/system/cloud/config'),
   saveConfig: (config: CloudConfig) => http.post('/system/cloud/config', { config }),
   test: (config: CloudConfig) =>
-    http.post<{ private: boolean; description: string }>('/system/cloud/test', config),
-  listImages: () => http.get<CloudImage[]>('/system/cloud/images'),
-  sync: (keys: string[]) => http.post<CloudSyncResult>('/system/cloud/sync', { keys }),
-  syncAll: () => http.post<CloudSyncResult>('/system/cloud/sync-all'),
-  deleteImages: (keys: string[]) =>
-    http.post<{ success: number; failed: string[] }>('/system/cloud/delete', { keys }),
-  clearImages: () => http.post<{ success: number; total: number }>('/system/cloud/clear'),
-  listBackups: () => http.get<CloudBackup[]>('/system/cloud/backups'),
-  uploadBackup: (password: string) =>
-    http.post<{ key: string; name: string; size: number; url: string }>('/system/cloud/backup', {
-      password,
+    http.post<{ private: boolean; description: string }>('/system/cloud/test', config, {
+      timeout: 60000,
     }),
+  listImages: () => http.get<CloudImage[]>('/system/cloud/images', { timeout: 60000 }),
+  sync: (keys: string[]) =>
+    http.post<CloudSyncResult>('/system/cloud/sync', { keys }, { timeout: 600000 }),
+  syncAll: () =>
+    http.post<CloudSyncResult>('/system/cloud/sync-all', undefined, { timeout: 1200000 }),
+  deleteImages: (keys: string[]) =>
+    http.post<{ success: number; failed: string[] }>(
+      '/system/cloud/delete',
+      { keys },
+      { timeout: 600000 },
+    ),
+  clearImages: () =>
+    http.post<{ success: number; total: number }>('/system/cloud/clear', undefined, {
+      timeout: 1200000,
+    }),
+  listBackups: () => http.get<CloudBackup[]>('/system/cloud/backups', { timeout: 60000 }),
+  uploadBackup: (password: string) =>
+    http.post<{ key: string; name: string; size: number; url: string }>(
+      '/system/cloud/backup',
+      { password },
+      { timeout: 300000 },
+    ),
   restoreBackup: (key: string, password: string) =>
-    http.post<RestoreStats>('/system/cloud/backup/restore', { key, password }),
+    http.post<RestoreStats>('/system/cloud/backup/restore', { key, password }, { timeout: 600000 }),
   downloadBackup: (key: string): Promise<Blob> =>
     rawHttp
-      .get('/system/cloud/backup/download', { params: { key }, responseType: 'blob' })
+      .get('/system/cloud/backup/download', {
+        params: { key },
+        responseType: 'blob',
+        timeout: 600000,
+      })
       .then((response) => response.data),
-  deleteBackups: (keys: string[]) => http.post('/system/cloud/backup/delete', { keys }),
+  deleteBackups: (keys: string[]) =>
+    http.post('/system/cloud/backup/delete', { keys }, { timeout: 300000 }),
 }
 
 export const systemApi = {

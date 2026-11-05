@@ -43,7 +43,7 @@ func SaveItemIcon(c *gin.Context) {
 		req.Icon.ItemType = 2
 	}
 	if req.Icon.ItemType == 2 && req.Icon.Text == "" {
-		req.Icon.Text = strings.ToUpper(string([]rune(req.Title)[0:1]))
+		req.Icon.Text = firstRuneTitle(req.Title)
 	}
 	var group models.ItemIconGroup
 	if err := global.DB.Where("id = ? AND user_id = ?", req.ItemIconGroupID, user.ID).First(&group).Error; err != nil {

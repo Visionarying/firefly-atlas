@@ -193,6 +193,7 @@ npm run build:copy   # 构建并把 dist 复制到 service/router/webdist
 | `TZ` | 系统时区 | Docker 镜像内建议 `Asia/Shanghai` |
 | `GIN_MODE` | `debug` | 生产环境设为 `release` |
 | `ADMIN_PASSWORD` | 空 | 仅首次初始化时使用；为空则自动生成随机密码 |
+| `TRUSTED_PROXIES` | 空 | 反向代理部署时填代理 IP / CIDR（逗号分隔）；留空表示不信任 `X-Forwarded-For` |
 
 数据目录结构：
 
@@ -311,6 +312,8 @@ firefly-panel/
 - 密码使用 bcrypt 哈希存储。
 - 登录成功后轮换用户 Token，旧 Token 立即失效；前端保存在 `localStorage.firefly_token`。
 - 同一 IP 连续 5 次登录失败会锁定 60 秒（内存实现，重启服务后清零）。
+- 默认不信任 `X-Forwarded-For`，避免伪造来源绕过登录限流；置于反向代理之后请设置 `TRUSTED_PROXIES`。
+- 跨域请求只回显与本站同源的 `Origin`，不会对任意站点返回 `Access-Control-Allow-Origin`。
 - 公开访客模式仅开放只读接口，数据固定读取管理员（UID 1）的空间。
 - 系统状态、公告与自定义代码由管理员统一控制；访客只能读取白名单设置。
 - 图库删除接口强制按 `user_id` 校验，普通用户无法删除他人或管理员文件。

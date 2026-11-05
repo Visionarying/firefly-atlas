@@ -46,6 +46,15 @@
 - GitHub Actions：前后端 CI 与 `linux/amd64`、`linux/arm64` 多架构镜像
 - 版本号与 Docker 标签统一为 `1.1.0`
 
+### 发布前审核修复
+
+- CI 后端任务在干净检出时因 `go:embed all:webdist` 找不到目录而失败，已补占位步骤
+- 云端推送、审核、云同步、云备份等长任务的前端超时与后端对齐，不再 30 秒误报“网络错误”
+- 书签导入遇到空标题会触发切片越界 panic，改用安全的首字符提取
+- CORS 不再向任意 `Origin` 回显并附加凭证，仅允许同源
+- 不再默认信任 `X-Forwarded-For`（伪造该头可绕过登录限流），新增 `TRUSTED_PROXIES` 环境变量
+- `Dockerfile` 版本号改为 `ARG VERSION`，发布时通过构建参数覆盖
+
 ## v1.0.0
 
 - 首个可用版本：登录、分组、卡片、图标、壁纸、搜索、JSON 备份、Docker 部署
