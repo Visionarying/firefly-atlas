@@ -47,6 +47,9 @@ jobs:
       - name: Vet
         working-directory: service
         run: go vet ./...
+      - name: Test
+        working-directory: service
+        run: go test ./...
       - name: Build
         working-directory: service
         run: go build -trimpath -o /tmp/firefly-atlas .

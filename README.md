@@ -1,12 +1,12 @@
-# Firefly Atlas v1.3.0「Sentinel」
+# Firefly Atlas v1.3.1「Sentinel」
 
 一个面向私有云 / NAS / 家庭工作站的轻量导航面板。V1.2 在 V1.1 的基础上补齐多页面与分栏、图库缩略图与压缩、书签增量导入、数字快捷键、搜索前缀和版本更新提示，所有数据仍保存在本地 SQLite 中。
 
-`v1.3.0` 是服务状态历史与告警版：后台每 5 分钟采样卡片在线状态，按 24 小时聚合出在线率，状态从在线变为离线时用浏览器通知提醒一次，并支持维护窗口与 7 天历史保留。
+`v1.3.1` 是服务状态历史与告警版：后台每 5 分钟采样卡片在线状态，按 24 小时聚合出在线率，状态从在线变为离线时用浏览器通知提醒一次，并支持维护窗口与 7 天历史保留。本版同时把系统状态条改得更扁，并让卡片行在宽屏下居中。
 
 > 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 二次开发版（作者 Roland），按 Vue 3 + Go 重新实现，保留原项目署名。
 >
-> 版本命名：`v1.3.0` 代号 **Sentinel（哨兵）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
+> 版本命名：`v1.3.1` 代号 **Sentinel（哨兵）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
 
 ## 功能
 
@@ -168,23 +168,23 @@ docker compose up -d --build
 只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
 
 ```bash
-docker pull ghcr.io/visionarying/firefly-atlas:1.3.0
+docker pull ghcr.io/visionarying/firefly-atlas:1.3.1
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  ghcr.io/visionarying/firefly-atlas:1.3.0
+  ghcr.io/visionarying/firefly-atlas:1.3.1
 ```
 
 也可以本地构建：
 
 ```bash
-docker build -t firefly-atlas:1.3.0 .
+docker build -t firefly-atlas:1.3.1 .
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  firefly-atlas:1.3.0
+  firefly-atlas:1.3.1
 ```
 
 ### 多架构镜像
@@ -406,11 +406,12 @@ firefly-atlas/
 - `v1.2.1` **Clarity**：首页常驻页面栏、1 / 2 / 3 列快速切换、新建页面入口，多页面不再藏起来
 - `v1.2.2` **Mend**：修复压缩后缩略图未重建、ZIP 还原丢失缩略图字段、缺失上传文件返回 HTML 的问题
 - `v1.3.0` **Sentinel**：服务状态 5 分钟采样与 24 小时在线率、在线 → 离线浏览器通知、维护窗口、7 天历史保留
+- `v1.3.1` **Sentinel**：系统状态条扁平化（桌面高度约 142px → 87px）、与内容网格同宽对齐、卡片不足一行时居中
 - 后续每个发布版本使用独立版本号与代号（例如 `v1.4.0 Bilingual`），不再重复使用同一版本号。
 
 ### 后续方向
 
-- `v1.3.x Sentinel`：自定义小组件、磁盘挂载多选、可选登录验证码（v1.3.0 已交付服务状态历史与告警）
+- `v1.3.x Sentinel`：自定义小组件、磁盘挂载多选、可选登录验证码（v1.3.0 / v1.3.1 已交付服务状态历史、告警与界面修整）
 - `v1.4 Bilingual`：中英双语（只做中文 / 英文）
 - 云存储断点续传与大文件分片（GitHub 100MB 限制）
 - 反向代理 / HTTPS 一键部署向导
