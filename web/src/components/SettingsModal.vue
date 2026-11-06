@@ -1328,7 +1328,7 @@ async function logout() {
   router.push('/login')
 }
 
-const version = ref('1.2.1')
+const version = ref('1.2.2')
 const updateChecking = ref(false)
 const updateState = ref<UpdateCheck | null>(null)
 const updateError = ref('')
@@ -2467,7 +2467,7 @@ async function checkUpdates() {
             <div class="about-logo">F</div>
             <div>
               <strong>Firefly Atlas</strong>
-              <div class="row-hint">Version {{ version }} · V1.2.1「Clarity」</div>
+              <div class="row-hint">Version {{ version }} · V1.2.2「Mend」</div>
             </div>
           </div>
 

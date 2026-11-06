@@ -23,8 +23,10 @@ func ensureThumb(file *models.File) string {
 		return file.Thumb
 	}
 	if file.Thumb != "" {
-		if _, err := localUploadPath(file.Thumb); err == nil {
-			return file.Thumb
+		if local, err := localUploadPath(file.Thumb); err == nil {
+			if info, statErr := os.Stat(local); statErr == nil && info.Size() > 0 {
+				return file.Thumb
+			}
 		}
 	}
 	ext := strings.ToLower(filepath.Ext(file.Src))

@@ -1,12 +1,12 @@
-# Firefly Atlas v1.2.1「Clarity」
+# Firefly Atlas v1.2.2「Mend」
 
 一个面向私有云 / NAS / 家庭工作站的轻量导航面板。V1.2 在 V1.1 的基础上补齐多页面与分栏、图库缩略图与压缩、书签增量导入、数字快捷键、搜索前缀和版本更新提示，所有数据仍保存在本地 SQLite 中。
 
-`v1.2.1` 让多页面一眼可见：登录后首页始终显示页面栏、1 / 2 / 3 列快速切换和「新建页面」入口，不再需要先到设置里猜功能在哪里。
+`v1.2.2` 是备份还原演练后的图库修复版：压缩后缩略图会正确重建，整站 ZIP 还原不再丢失缩略图字段，缺失的 `/uploads/` 文件也改为返回 404。
 
 > 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 二次开发版（作者 Roland），按 Vue 3 + Go 重新实现，保留原项目署名。
 >
-> 版本命名：`v1.2.1` 代号 **Clarity（清晰）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
+> 版本命名：`v1.2.2` 代号 **Mend（修补）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
 
 ## 功能
 
@@ -158,23 +158,23 @@ docker compose up -d --build
 只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
 
 ```bash
-docker pull ghcr.io/visionarying/firefly-atlas:1.2.1
+docker pull ghcr.io/visionarying/firefly-atlas:1.2.2
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  ghcr.io/visionarying/firefly-atlas:1.2.1
+  ghcr.io/visionarying/firefly-atlas:1.2.2
 ```
 
 也可以本地构建：
 
 ```bash
-docker build -t firefly-atlas:1.2.1 .
+docker build -t firefly-atlas:1.2.2 .
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  firefly-atlas:1.2.1
+  firefly-atlas:1.2.2
 ```
 
 ### 多架构镜像
@@ -394,6 +394,7 @@ firefly-atlas/
 - `v1.1.2` **Tempo**：移除第三方字体 CDN 阻塞、新增 Windows 一键启动脚本、自动打开浏览器、修复双击 exe 的端口/数据目录问题
 - `v1.2.0` **Lumen**：多页面与 1 / 2 / 3 列、跨页移动卡片、图库缩略图与 JPEG/PNG 压缩、书签增量导入、数字快捷键、搜索前缀、版本更新提示、带图标 GUI 启动器
 - `v1.2.1` **Clarity**：首页常驻页面栏、1 / 2 / 3 列快速切换、新建页面入口，多页面不再藏起来
+- `v1.2.2` **Mend**：修复压缩后缩略图未重建、ZIP 还原丢失缩略图字段、缺失上传文件返回 HTML 的问题
 - 后续每个发布版本使用独立版本号与代号（例如 `v1.3.0 Sentinel`），不再重复使用同一版本号。
 
 ### 后续方向

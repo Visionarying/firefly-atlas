@@ -615,7 +615,7 @@ func applySiteRestore(data *siteBackup, current *models.User, stagingUploads str
 			continue
 		}
 		file := models.File{
-			UserID: uid, FileName: f.FileName, Src: f.Src, FileType: f.FileType,
+			UserID: uid, FileName: f.FileName, Src: f.Src, Thumb: f.Thumb, FileType: f.FileType,
 			Size: f.Size, SyncStatus: f.SyncStatus, AuditRemark: f.AuditRemark,
 			CloudKey: f.CloudKey, CloudURL: f.CloudURL, SyncedAt: f.SyncedAt,
 			CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt,

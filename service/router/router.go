@@ -154,6 +154,10 @@ func registerSPA(r *gin.Engine) {
 			c.JSON(http.StatusNotFound, gin.H{"code": -1, "msg": "接口不存在"})
 			return
 		}
+		if strings.HasPrefix(p, "/uploads/") {
+			c.Status(http.StatusNotFound)
+			return
+		}
 		clean := strings.TrimPrefix(path.Clean(p), "/")
 		if clean != "" && clean != "." {
 			if f, err := sub.Open(clean); err == nil {

@@ -128,6 +128,7 @@ func compressOne(file *models.File) (bool, int64, error) {
 		}
 	}
 	removeThumb(*file)
+	file.Thumb = ""
 	file.Size = newInfo.Size()
 	global.DB.Model(&models.File{}).Where("id = ?", file.ID).Update("size", newInfo.Size())
 	ensureThumb(file)

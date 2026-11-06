@@ -9,7 +9,7 @@ import (
 
 var (
 	// Version is injected at build time through -ldflags.
-	Version = "1.2.1"
+	Version = "1.2.2"
 	Port    = "3002"
 	DataDir = "./data"
 	DB      *gorm.DB
