@@ -60,6 +60,11 @@ import type {
 
 const props = defineProps<{ show: boolean }>()
 const emit = defineEmits<{ (e: 'update:show', value: boolean): void }>()
+defineExpose({
+  openSection: (key: string) => {
+    active.value = key
+  },
+})
 
 const panel = usePanelStore()
 const auth = useAuthStore()
@@ -1323,7 +1328,7 @@ async function logout() {
   router.push('/login')
 }
 
-const version = ref('1.2.0')
+const version = ref('1.2.1')
 const updateChecking = ref(false)
 const updateState = ref<UpdateCheck | null>(null)
 const updateError = ref('')
@@ -2462,7 +2467,7 @@ async function checkUpdates() {
             <div class="about-logo">F</div>
             <div>
               <strong>Firefly Atlas</strong>
-              <div class="row-hint">Version {{ version }} · V1.2「Lumen」</div>
+              <div class="row-hint">Version {{ version }} · V1.2.1「Clarity」</div>
             </div>
           </div>
 

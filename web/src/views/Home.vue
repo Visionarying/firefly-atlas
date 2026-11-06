@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, h, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { NDropdown, useDialog, useMessage, type DropdownOption } from 'naive-ui'
 import {
@@ -49,6 +49,7 @@ const dialog = useDialog()
 const config = panel.config
 
 const settingsShow = ref(false)
+const settingsRef = ref<InstanceType<typeof SettingsModal> | null>(null)
 const itemModalShow = ref(false)
 const editingItem = ref<ItemIcon | null>(null)
 const defaultGroupId = ref<number | undefined>(undefined)
@@ -66,6 +67,25 @@ const pageStyle = computed(() => ({
 }))
 
 const pageColumns = computed(() => panel.currentPage?.columns || 1)
+
+async function setPageColumns(columns: number) {
+  const page = panel.currentPage
+  if (!page || page.columns === columns) return
+  const previous = page.columns
+  page.columns = columns
+  try {
+    await panelApi.savePage({ id: page.id, title: page.title, columns })
+  } catch (e: any) {
+    page.columns = previous
+    message.error(e.message || '切换分栏失败')
+  }
+}
+
+async function openPageSettings() {
+  settingsShow.value = true
+  await nextTick()
+  settingsRef.value?.openSection('groups')
+}
 
 const flatCurrentItems = computed(() =>
   panel.currentGroups.flatMap((group) => panel.itemsByGroup.get(group.id) || []),
@@ -469,7 +489,7 @@ function onUserMenu(key: string) {
     </div>
 
     <main class="page" :style="pageStyle">
-      <nav v-if="panel.pages.length > 1" class="page-tabs">
+      <nav v-if="panel.pages.length > 1 || auth.isLoggedIn" class="page-tabs">
         <button
           v-for="page in panel.pages"
           :key="page.id"
@@ -480,6 +500,22 @@ function onUserMenu(key: string) {
         >
           <LayoutGrid :size="13" />
           {{ page.title }}
+        </button>
+        <span v-if="auth.isLoggedIn" class="page-divider" />
+        <button
+          v-for="columns in [1, 2, 3]"
+          :key="columns"
+          type="button"
+          class="page-tab col-tab"
+          :class="{ active: pageColumns === columns }"
+          :title="`当前页面显示为 ${columns} 列`"
+          @click="setPageColumns(columns)"
+        >
+          {{ columns }} 列
+        </button>
+        <button v-if="auth.isLoggedIn" type="button" class="page-tab page-add" @click="openPageSettings">
+          <Plus :size="13" />
+          新建页面
         </button>
       </nav>
 
@@ -561,7 +597,7 @@ function onUserMenu(key: string) {
       <span class="spinner" />
     </div>
 
-    <SettingsModal v-if="auth.isLoggedIn" v-model:show="settingsShow" />
+    <SettingsModal v-if="auth.isLoggedIn" ref="settingsRef" v-model:show="settingsShow" />
 
     <EditItemModal
       v-if="auth.isLoggedIn"
@@ -714,6 +750,27 @@ function onUserMenu(key: string) {
 .page-tab.active {
   color: var(--accent-strong, #059669);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.page-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: var(--line);
+}
+.col-tab {
+  font-size: 11px;
+  padding: 0 9px;
+  opacity: 0.72;
+}
+.col-tab.active {
+  opacity: 1;
+}
+.page-add {
+  border: 1px dashed color-mix(in srgb, var(--accent) 42%, transparent);
+  color: var(--accent-strong, #059669);
+}
+.page-add:hover {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
 }
 
 .update-banner {

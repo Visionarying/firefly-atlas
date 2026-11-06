@@ -1,12 +1,12 @@
-# Firefly Atlas v1.2.0「Lumen」
+# Firefly Atlas v1.2.1「Clarity」
 
 一个面向私有云 / NAS / 家庭工作站的轻量导航面板。V1.2 在 V1.1 的基础上补齐多页面与分栏、图库缩略图与压缩、书签增量导入、数字快捷键、搜索前缀和版本更新提示，所有数据仍保存在本地 SQLite 中。
 
-`v1.2.0` 是“装得下更多内容”的版本：页面标签让主页、工作、影音各自独立；图库列表优先加载缩略图；重复导入书签会复用同名分组并更新标题；同时把 Windows 启动器改成带图标、无控制台闪烁的原生 GUI。
+`v1.2.1` 让多页面一眼可见：登录后首页始终显示页面栏、1 / 2 / 3 列快速切换和「新建页面」入口，不再需要先到设置里猜功能在哪里。
 
 > 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 二次开发版（作者 Roland），按 Vue 3 + Go 重新实现，保留原项目署名。
 >
-> 版本命名：`v1.2.0` 代号 **Lumen（流明）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
+> 版本命名：`v1.2.1` 代号 **Clarity（清晰）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
 
 ## 功能
 
@@ -16,7 +16,8 @@
 - 管理员可创建、禁用、删除账号并切换角色，普通用户拥有独立空间
 - 公开访客只读模式（访客不能编辑任何内容）
 - 分组与卡片增删改、编辑模式拖拽排序
-- 多页面：顶部页面标签切换，每页拥有独立分组与卡片，支持 1 / 2 / 3 列
+- 多页面：顶部页面栏切换，每页拥有独立分组与卡片，支持 1 / 2 / 3 列
+- 登录后首页始终显示页面栏，可直接切换分栏、新建页面，不需要先进入设置
 - 卡片右键菜单「移动到分组」，可跨页面移动，不改变图标与网址
 - 三种图标形态：图片、文字、SVG
 - 图片图标与壁纸本地上传，保存到数据目录
@@ -157,23 +158,23 @@ docker compose up -d --build
 只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
 
 ```bash
-docker pull ghcr.io/visionarying/firefly-atlas:1.2.0
+docker pull ghcr.io/visionarying/firefly-atlas:1.2.1
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  ghcr.io/visionarying/firefly-atlas:1.2.0
+  ghcr.io/visionarying/firefly-atlas:1.2.1
 ```
 
 也可以本地构建：
 
 ```bash
-docker build -t firefly-atlas:1.2.0 .
+docker build -t firefly-atlas:1.2.1 .
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  firefly-atlas:1.2.0
+  firefly-atlas:1.2.1
 ```
 
 ### 多架构镜像
@@ -392,6 +393,7 @@ firefly-atlas/
 - `v1.1.1` **Hygiene**：项目更名 Firefly Atlas、补 MIT LICENSE、修正关于页/README 致谢、同步 GHCR 与 CI、Docker 版本注入、反向代理与 CORS 安全文档
 - `v1.1.2` **Tempo**：移除第三方字体 CDN 阻塞、新增 Windows 一键启动脚本、自动打开浏览器、修复双击 exe 的端口/数据目录问题
 - `v1.2.0` **Lumen**：多页面与 1 / 2 / 3 列、跨页移动卡片、图库缩略图与 JPEG/PNG 压缩、书签增量导入、数字快捷键、搜索前缀、版本更新提示、带图标 GUI 启动器
+- `v1.2.1` **Clarity**：首页常驻页面栏、1 / 2 / 3 列快速切换、新建页面入口，多页面不再藏起来
 - 后续每个发布版本使用独立版本号与代号（例如 `v1.3.0 Sentinel`），不再重复使用同一版本号。
 
 ### 后续方向
