@@ -135,6 +135,32 @@ export interface HealthResult {
   checkedAt: number
 }
 
+export interface HealthStatusItem {
+  itemId: number
+  title: string
+  groupId: number
+  url: string
+  monitored: boolean
+  online: boolean
+  status: number
+  latencyMs: number
+  checkedAt: number
+  alert: boolean
+  samples24h: number
+  onlineSamples24h: number
+  uptime24h: number | null
+  lastOnlineAt: number
+}
+
+export interface HealthStatusOverview {
+  enabled: boolean
+  sampling: boolean
+  intervalMinutes: number
+  retentionDays: number
+  maintenance: { enabled: boolean; start: string; end: string }
+  items: HealthStatusItem[]
+}
+
 export interface CloudGitHubConfig {
   owner: string
   repo: string
