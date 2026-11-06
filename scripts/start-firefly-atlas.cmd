@@ -1,15 +1,17 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI"
+cd /d "%ROOT%"
 
-REM Always use the real data directory next to this script, not service\data.
-set "DATA_DIR=%~dp0data"
+REM Always use the real data directory next to the project, not service\data.
+set "DATA_DIR=%ROOT%\data"
 if not defined PORT set "PORT=3002"
 if not defined GIN_MODE set "GIN_MODE=release"
 
-if not exist "service\firefly-atlas.exe" (
+if not exist "%ROOT%\service\firefly-atlas.exe" (
   echo.
-  echo service\firefly-atlas.exe was not found.
+  echo %ROOT%\service\firefly-atlas.exe was not found.
   echo Build it first with: scripts\build.ps1
   echo.
   pause
@@ -35,7 +37,7 @@ echo.
 
 REM Keep the server in its own console so errors remain readable, then wait for
 REM the health endpoint before opening the browser.
-start "Firefly Atlas Server" cmd /k "service\firefly-atlas.exe"
+start "Firefly Atlas Server" cmd /k ""%ROOT%\service\firefly-atlas.exe""
 for /l %%i in (1,1,30) do (
   powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri ('http://127.0.0.1:%PORT%/api/v1/health') -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1"
   if not errorlevel 1 (
