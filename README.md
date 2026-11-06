@@ -113,6 +113,10 @@ $env:DATA_DIR='..\data'
 .\firefly-atlas.exe
 ```
 
+> **不要直接双击 `service\firefly-atlas.exe`。**  
+> 它会把当前目录当作数据目录，而且如果 3002 端口已有实例，会直接闪退。  
+> 在 Windows 上请双击根目录的 **`start-firefly-atlas.cmd`**：它会自动使用根目录 `data\`、检测端口并在实例已运行时直接打开浏览器。
+
 打开 <http://127.0.0.1:3002>，默认账号：
 
 ```text
@@ -196,6 +200,25 @@ cd web
 npm run type-check   # vue-tsc 类型检查
 npm run build:copy   # 构建并把 dist 复制到 service/router/webdist
 ```
+
+## 常见问题
+
+### 双击 `service\firefly-atlas.exe` 后黑框一闪而过？
+
+通常不是程序损坏，而是以下两种情况之一：
+
+1. **3002 端口已经有一个实例在运行**  
+   第二个实例无法绑定端口，会立即退出。先访问 <http://127.0.0.1:3002> 看看是否已经在运行。
+
+2. **直接双击 exe 使用了错误的数据目录**  
+   双击时工作目录是 `service\`，默认 `DATA_DIR=./data` 会指向 `service\data`，而不是根目录真实数据 `data\`。即使启动成功，看到的也是空面板。
+
+正确做法：双击根目录的 **`start-firefly-atlas.cmd`**。它会：
+
+- 使用根目录 `data\`
+- 检测 3002 是否已有实例
+- 已有实例时直接打开浏览器
+- 启动失败时暂停窗口并显示原因
 
 ## 配置
 
@@ -297,6 +320,7 @@ firefly-atlas/
 │   └── docker-publish.yml    # amd64 / arm64 多架构镜像
 ├── Dockerfile
 ├── docker-compose.yml
+├── start-firefly-atlas.cmd  # Windows 双击启动（自动使用 data\、检测端口）
 ├── scripts/
 │   └── build.ps1             # 前端 + 后端一键构建
 ├── service/                  # Go 后端
