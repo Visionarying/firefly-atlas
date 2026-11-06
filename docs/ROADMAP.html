@@ -154,9 +154,15 @@
 <td>已发布</td>
 </tr>
 <tr>
-<td>v1.3</td>
+<td>v1.3.0</td>
 <td>Sentinel</td>
-<td>服务状态历史与告警、自定义小组件、监控增强</td>
+<td>服务状态 5 分钟采样、24 小时在线率、在线 → 离线浏览器通知、维护窗口</td>
+<td>开发完成，待发布</td>
+</tr>
+<tr>
+<td>v1.3.x</td>
+<td>Sentinel</td>
+<td>自定义小组件、磁盘挂载多选、可选登录验证码</td>
 <td>规划中</td>
 </tr>
 <tr>
@@ -203,7 +209,7 @@
 </tr>
 <tr>
 <td>自定义小组件</td>
-<td>已列入 v1.3</td>
+<td>已列入 v1.3.x</td>
 <td>需先设计 SSRF、超时、响应体大小与密钥安全边界</td>
 </tr>
 </tbody>
@@ -406,18 +412,26 @@
 <hr />
 <h2 id="v13sentinel">五、v1.3「Sentinel」</h2>
 <p>目标：从"能用"走向"能看出问题"。</p>
-<h3 id="51">5.1 服务状态历史与告警</h3>
+<h3 id="51-v130">5.1 服务状态历史与告警（v1.3.0 已实现）</h3>
 <ul>
-<li>每 5 分钟采样一次每张卡片的在线状态，写入历史表</li>
-<li>新增 <code>health_url</code> 字段：默认留空时同时采样 <code>url</code> 与 <code>lanUrl</code>，也可手动指定探测地址</li>
-<li>新增「服务状态」页：24 小时在线率、最近延迟、最后检查时间</li>
-<li><strong>状态变化才提醒</strong>（在线→离线提醒一次），避免每 60 秒刷屏</li>
-<li>浏览器通知为默认通道；邮件 / Webhook / ntfy 作为可选通道</li>
-<li>支持维护窗口，维护期间不告警</li>
-<li>历史数据保留 7 天后自动清理</li>
+<li>每 5 分钟采样一次每张已开启监测的卡片，写入 <code>health_samples</code> 历史表</li>
+<li>采样地址优先 <code>lan_url</code>，没有时回退 <code>url</code>；<strong>不新增 <code>health_url</code> 字段</strong>，少一层配置与迁移</li>
+<li>「服务状态」作为设置内的一节，并在首页顶部提供入口：24 小时在线率、当前在线数、最近延迟、最后检查时间</li>
+<li>在线率用 SQL 聚合（<code>COUNT</code> + 条件求和），只把聚合结果读进内存</li>
+<li><strong>状态变化才提醒</strong>：只在真实的「在线 → 离线」跃迁时写入 <code>alert</code> 标记，不会每 5 分钟刷屏</li>
+<li>通知通道：v1.3.0 仅浏览器通知（面板页面需保持打开）；邮件 / Webhook / ntfy 延后</li>
+<li>客户端用 <code>localStorage</code> 按「卡片 + 采样时间」去重；首次开启只记录基线，不补发历史告警</li>
+<li>支持维护窗口并允许跨午夜，维护期间不写 <code>alert</code>；开始与结束时间相同表示关闭</li>
+<li>历史数据保留 7 天后自动清理；卡片或分组删除时同步清理孤儿采样</li>
 </ul>
-<p>技术要点：新增 <code>health_samples</code> 表；采样由后台 goroutine 驱动；在线率用 SQL 聚合，避免全量读内存。</p>
-<h3 id="52">5.2 自定义小组件（待开发转正）</h3>
+<p>技术要点：<code>health_samples</code> 表 + 后台 goroutine（并发 6、单条超时 12 秒、按批串行）；<code>GET /api/v1/system/health/overview</code> 读取，<code>POST /api/v1/system/health/run</code> 手动触发（仅管理员）。</p>
+<p><strong>已知边界</strong>：</p>
+<ul>
+<li>浏览器通知依赖页面打开，关闭标签页后不会提醒；后续可补 Webhook / ntfy 作为常驻通道</li>
+<li>没有独立探测地址字段，卡片未配置内网地址时只能用公网地址</li>
+<li>采样在单进程内完成，卡片很多时会拉长一轮耗时（当前以并发 6 控制）</li>
+</ul>
+<h3 id="52-v13x">5.2 自定义小组件（v1.3.x 待开发转正）</h3>
 <p><strong>做什么</strong>：新增一种卡片类型「数据卡片」，配置三样东西：</p>
 <ol>
 <li>数据地址（返回 JSON 的 URL，可带请求头）</li>
@@ -433,7 +447,7 @@
 <li>禁止访问云元数据地址；请求头与密钥不进入普通用户响应</li>
 <li>请求结果按 TTL 缓存，失败时保留上一次可用值</li>
 </ul>
-<h3 id="53">5.3 其它三项</h3>
+<h3 id="53-v13x">5.3 其它三项（v1.3.x）</h3>
 <table>
 <thead>
 <tr>

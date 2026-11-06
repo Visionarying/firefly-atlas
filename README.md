@@ -1,12 +1,12 @@
-# Firefly Atlas v1.2.2「Mend」
+# Firefly Atlas v1.3.0「Sentinel」
 
 一个面向私有云 / NAS / 家庭工作站的轻量导航面板。V1.2 在 V1.1 的基础上补齐多页面与分栏、图库缩略图与压缩、书签增量导入、数字快捷键、搜索前缀和版本更新提示，所有数据仍保存在本地 SQLite 中。
 
-`v1.2.2` 是备份还原演练后的图库修复版：压缩后缩略图会正确重建，整站 ZIP 还原不再丢失缩略图字段，缺失的 `/uploads/` 文件也改为返回 404。
+`v1.3.0` 是服务状态历史与告警版：后台每 5 分钟采样卡片在线状态，按 24 小时聚合出在线率，状态从在线变为离线时用浏览器通知提醒一次，并支持维护窗口与 7 天历史保留。
 
 > 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 二次开发版（作者 Roland），按 Vue 3 + Go 重新实现，保留原项目署名。
 >
-> 版本命名：`v1.2.2` 代号 **Mend（修补）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
+> 版本命名：`v1.3.0` 代号 **Sentinel（哨兵）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
 
 ## 功能
 
@@ -89,6 +89,16 @@
 - 自动跳过重复网址与 `javascript:` 等非 HTTP 书签
 - 登录失败限流：同一 IP 连续 5 次错误锁定 60 秒
 
+### 服务状态与告警
+
+- 后台每 5 分钟采样一次已开启监测的卡片，优先探测内网地址，其次公网地址
+- 「服务状态」面板：24 小时平均在线率、当前在线数、最近延迟与最后检查时间
+- 按卡片查看 24h 在线率与状态，可单独开启 / 停止监测，也可按「全部 / 仅监测」筛选
+- 在线 → 离线时通过浏览器通知提醒一次，同一条记录不会重复弹出；首次开启只记录基线，不补发历史告警
+- 维护窗口支持跨午夜（如 23:30 - 01:30），维护期间不产生离线提醒；开始与结束相同表示关闭
+- 采样开关、维护窗口均可随时关闭，历史记录保留 7 天后自动清理
+- 采样在后台 goroutine 中串行分批执行，单次并发 6、单条超时 12 秒，不阻塞正常请求
+
 ## 技术栈
 
 | 层 | 技术 |
@@ -158,23 +168,23 @@ docker compose up -d --build
 只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
 
 ```bash
-docker pull ghcr.io/visionarying/firefly-atlas:1.2.2
+docker pull ghcr.io/visionarying/firefly-atlas:1.3.0
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  ghcr.io/visionarying/firefly-atlas:1.2.2
+  ghcr.io/visionarying/firefly-atlas:1.3.0
 ```
 
 也可以本地构建：
 
 ```bash
-docker build -t firefly-atlas:1.2.2 .
+docker build -t firefly-atlas:1.3.0 .
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  firefly-atlas:1.2.2
+  firefly-atlas:1.3.0
 ```
 
 ### 多架构镜像
@@ -395,11 +405,12 @@ firefly-atlas/
 - `v1.2.0` **Lumen**：多页面与 1 / 2 / 3 列、跨页移动卡片、图库缩略图与 JPEG/PNG 压缩、书签增量导入、数字快捷键、搜索前缀、版本更新提示、带图标 GUI 启动器
 - `v1.2.1` **Clarity**：首页常驻页面栏、1 / 2 / 3 列快速切换、新建页面入口，多页面不再藏起来
 - `v1.2.2` **Mend**：修复压缩后缩略图未重建、ZIP 还原丢失缩略图字段、缺失上传文件返回 HTML 的问题
-- 后续每个发布版本使用独立版本号与代号（例如 `v1.3.0 Sentinel`），不再重复使用同一版本号。
+- `v1.3.0` **Sentinel**：服务状态 5 分钟采样与 24 小时在线率、在线 → 离线浏览器通知、维护窗口、7 天历史保留
+- 后续每个发布版本使用独立版本号与代号（例如 `v1.4.0 Bilingual`），不再重复使用同一版本号。
 
 ### 后续方向
 
-- `v1.3 Sentinel`：服务状态历史与告警、自定义小组件、磁盘挂载多选、可选登录验证码
+- `v1.3.x Sentinel`：自定义小组件、磁盘挂载多选、可选登录验证码（v1.3.0 已交付服务状态历史与告警）
 - `v1.4 Bilingual`：中英双语（只做中文 / 英文）
 - 云存储断点续传与大文件分片（GitHub 100MB 限制）
 - 反向代理 / HTTPS 一键部署向导
