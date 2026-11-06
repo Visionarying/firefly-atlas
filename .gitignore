@@ -5,6 +5,8 @@ data/
 *.log
 service/firefly-atlas.exe
 service/firefly-atlas
+Firefly Atlas.exe
+launcher/*.syso
 *.lnk
 service/router/webdist/
 .DS_Store
