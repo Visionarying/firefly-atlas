@@ -95,39 +95,32 @@ const disk = computed(() => percent(data.value?.diskPercent))
     <div class="metrics">
       <div class="metric">
         <div class="metric-top">
-          <span class="metric-name"><Cpu :size="14" />CPU</span>
-          <strong>{{ cpu.toFixed(0) }}%</strong>
+          <span class="metric-name"><Cpu :size="12" />CPU</span>
+          <strong :class="tone(cpu)">{{ cpu.toFixed(0) }}%</strong>
         </div>
-        <div class="bar"><span :class="tone(cpu)" :style="{ width: `${cpu}%` }" /></div>
-        <span class="metric-sub">{{ data.cpuCores }} 核心 · {{ data.cpuModel || '未知型号' }}</span>
+        <span class="metric-sub">{{ data.cpuCores }} 核 · {{ data.cpuModel || '未知型号' }}</span>
       </div>
 
       <div class="metric">
         <div class="metric-top">
-          <span class="metric-name"><MemoryStick :size="14" />内存</span>
-          <strong>{{ memory.toFixed(0) }}%</strong>
+          <span class="metric-name"><MemoryStick :size="12" />内存</span>
+          <strong :class="tone(memory)">{{ memory.toFixed(0) }}%</strong>
         </div>
-        <div class="bar"><span :class="tone(memory)" :style="{ width: `${memory}%` }" /></div>
         <span class="metric-sub">{{ formatBytes(data.memUsed) }} / {{ formatBytes(data.memTotal) }}</span>
       </div>
 
       <div class="metric">
         <div class="metric-top">
-          <span class="metric-name"><HardDrive :size="14" />磁盘</span>
-          <strong>{{ disk.toFixed(0) }}%</strong>
+          <span class="metric-name"><HardDrive :size="12" />磁盘</span>
+          <strong :class="tone(disk)">{{ disk.toFixed(0) }}%</strong>
         </div>
-        <div class="bar"><span :class="tone(disk)" :style="{ width: `${disk}%` }" /></div>
         <span class="metric-sub">{{ formatBytes(data.diskUsed) }} / {{ formatBytes(data.diskTotal) }}</span>
       </div>
 
       <div class="metric">
         <div class="metric-top">
-          <span class="metric-name"><Network :size="14" />网络</span>
-          <strong class="net">↑ ↓</strong>
-        </div>
-        <div class="net-values">
-          <span>↑ {{ formatBytes(data.netSent) }}</span>
-          <span>↓ {{ formatBytes(data.netRecv) }}</span>
+          <span class="metric-name"><Network :size="12" />网络</span>
+          <strong class="net">↑{{ formatBytes(data.netSent) }} ↓{{ formatBytes(data.netRecv) }}</strong>
         </div>
         <span class="metric-sub">累计流量 · 每 5 秒刷新</span>
       </div>
@@ -140,14 +133,14 @@ const disk = computed(() => percent(data.value?.diskPercent))
 <style scoped>
 .monitor {
   width: 100%;
-  margin: 16px auto 0;
-  padding: 12px 16px 13px;
-  border-radius: 14px;
+  margin: 14px auto 0;
+  padding: 8px 14px 9px;
+  border-radius: 13px;
   border: 1px solid var(--glass-border);
   background: rgba(var(--glass-rgb), 0.4);
   backdrop-filter: blur(22px) saturate(160%);
   -webkit-backdrop-filter: blur(22px) saturate(160%);
-  box-shadow: 0 16px 40px -30px rgba(var(--shadow-color), 0.55);
+  box-shadow: 0 12px 30px -28px rgba(var(--shadow-color), 0.5);
   animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -156,16 +149,16 @@ const disk = computed(() => percent(data.value?.diskPercent))
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
   border-bottom: 1px dashed var(--line);
 }
 
 .monitor-title {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
+  gap: 6px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-strong);
 }
@@ -173,10 +166,10 @@ const disk = computed(() => percent(data.value?.diskPercent))
   color: var(--accent);
 }
 .host {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 400;
   color: var(--text-faint);
-  padding: 1px 7px;
+  padding: 0 6px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: rgba(var(--glass-rgb), 0.4);
@@ -185,9 +178,9 @@ const disk = computed(() => percent(data.value?.diskPercent))
 .monitor-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--text-faint);
 }
 .platform {
@@ -232,63 +225,53 @@ const disk = computed(() => percent(data.value?.diskPercent))
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 0;
 }
 
 .metric {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 8px 11px;
-  border-radius: 10px;
-  background: rgba(var(--glass-rgb), 0.32);
-  border: 1px solid var(--line);
+  gap: 2px;
+  padding: 0 12px;
+  border-left: 1px solid var(--line);
+}
+.metric:first-child {
+  padding-left: 0;
+  border-left: 0;
 }
 
 .metric-top {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
 }
 .metric-name {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 10.5px;
   color: var(--text-soft);
 }
 .metric-top strong {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-strong);
   font-variant-numeric: tabular-nums;
 }
+.metric-top strong.ok {
+  color: var(--accent-strong, #059669);
+}
+.metric-top strong.warn {
+  color: #d97706;
+}
+.metric-top strong.danger {
+  color: #e11d48;
+}
 .metric-top strong.net {
-  font-size: 11px;
-  color: var(--text-faint);
-}
-
-.bar {
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(var(--glass-rgb), 0.55);
-  overflow: hidden;
-}
-.bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  transition: width 0.5s ease;
-}
-.bar .ok {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, #22d3ee), var(--accent));
-}
-.bar .warn {
-  background: linear-gradient(90deg, #fbbf24, #f59e0b);
-}
-.bar .danger {
-  background: linear-gradient(90deg, #fb7185, #e11d48);
+  font-size: 10.5px;
+  color: var(--text-soft);
+  font-weight: 500;
 }
 
 .metric-sub {
@@ -299,24 +282,27 @@ const disk = computed(() => percent(data.value?.diskPercent))
   white-space: nowrap;
 }
 
-.net-values {
-  display: flex;
-  gap: 10px;
-  font-size: 11px;
-  color: var(--text-soft);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 .monitor-err {
-  margin: 10px 0 0;
-  font-size: 10.5px;
+  margin: 8px 0 0;
+  font-size: 10px;
   color: var(--text-faint);
 }
 
 @media (max-width: 860px) {
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 7px;
+  }
+  .metric {
+    padding: 0 10px;
+  }
+  .metric:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .metric:nth-child(n + 3) {
+    padding-top: 7px;
+    border-top: 1px solid var(--line);
   }
   .platform {
     display: none;
@@ -325,17 +311,17 @@ const disk = computed(() => percent(data.value?.diskPercent))
 
 @media (max-width: 560px) {
   .monitor {
-    padding: 12px 13px 14px;
-    margin-top: 14px;
+    padding: 9px 12px 10px;
+    margin-top: 12px;
   }
   .uptime {
     display: none;
   }
-  .metrics {
-    gap: 8px;
-  }
   .metric {
-    padding: 9px 10px;
+    padding: 0 9px;
+  }
+  .metric:nth-child(odd) {
+    padding-left: 0;
   }
 }
 </style>
