@@ -116,7 +116,7 @@ $env:DATA_DIR='..\data'
 > **不要直接双击 `service\firefly-atlas.exe`。**  
 > 它会把当前目录当作数据目录，而且如果 3002 端口已有实例，会直接闪退。  
 > 在 Windows 上请双击根目录的 **`Firefly Atlas` 快捷方式**（带应用图标）：它会自动使用根目录 `data\`、检测端口并在实例已运行时直接打开浏览器。  
-> 如果快捷方式丢失，运行 `powershell -ExecutionPolicy Bypass -File scripts\create-shortcut.ps1` 重建；底层启动脚本是 `scripts\start-firefly-atlas.cmd`。
+> 如果快捷方式丢失，运行 `powershell -ExecutionPolicy Bypass -File scripts\create-shortcut.ps1` 重建；启动器本体是根目录的 `Firefly Atlas.exe`（由 `scripts\build-launcher.ps1` 构建）。
 
 打开 <http://127.0.0.1:3002>，默认账号：
 
@@ -219,9 +219,10 @@ npm run build:copy   # 构建并把 dist 复制到 service/router/webdist
 - 使用根目录 `data\`
 - 检测 3002 是否已有实例
 - 已有实例时直接打开浏览器
-- 启动失败时保留服务窗口并显示原因
+- 首次启动时后台运行服务，就绪后自动打开浏览器
+- 启动失败时弹窗并给出日志路径
 
-快捷方式由 `scripts\create-shortcut.ps1` 生成，底层启动脚本是 `scripts\start-firefly-atlas.cmd`。
+快捷方式由 `scripts\create-shortcut.ps1` 生成，启动器本体是根目录的 `Firefly Atlas.exe`，可用 `scripts\build-launcher.ps1` 重新构建。
 
 ## 配置
 
@@ -323,14 +324,16 @@ firefly-atlas/
 │   └── docker-publish.yml    # amd64 / arm64 多架构镜像
 ├── Dockerfile
 ├── docker-compose.yml
+├── Firefly Atlas.exe        # Windows GUI 启动器（构建产物，不提交）
 ├── Firefly Atlas.lnk        # Windows 本地快捷方式（带图标，不提交）
 ├── assets/
 │   └── firefly-atlas.ico    # 快捷方式 / 品牌图标
+├── launcher/                # Go GUI 启动器源码（无控制台窗口）
+│   └── main.go
 ├── scripts/
 │   ├── build.ps1             # 前端 + 后端一键构建
-│   ├── create-shortcut.ps1   # 重建 Firefly Atlas 快捷方式
-│   ├── start-firefly-atlas.cmd
-│   └── start-firefly-atlas.vbs
+│   ├── build-launcher.ps1    # 构建 Firefly Atlas.exe
+│   └── create-shortcut.ps1   # 重建 Firefly Atlas 快捷方式
 ├── service/                  # Go 后端
 │   ├── api/                  # 登录、面板、卡片、上传、设置、备份、云存储、健康探测、书签
 │   ├── cloud/                # GitHub / S3 / R2 统一客户端
