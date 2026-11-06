@@ -10,6 +10,7 @@ import type {
   HealthResult,
   ItemGroup,
   ItemIcon,
+  ItemIconPage,
   MonitorData,
   PanelConfig,
   PanelData,
@@ -36,10 +37,14 @@ export const panelApi = {
   saveItem: (item: Partial<ItemIcon>) => http.post<{ id: number }>('/panel/itemIcon/save', item),
   deleteItem: (id: number) => http.delete(`/panel/itemIcon/${id}`),
   sortItems: (ids: number[]) => http.post('/panel/itemIcon/sort', { ids }),
-  saveGroup: (group: { id?: number; title: string }) =>
+  saveGroup: (group: { id?: number; pageId?: number; title: string }) =>
     http.post<{ id: number }>('/panel/itemIconGroup/save', group),
   deleteGroup: (id: number) => http.delete(`/panel/itemIconGroup/${id}`),
   sortGroups: (ids: number[]) => http.post('/panel/itemIconGroup/sort', { ids }),
+  savePage: (page: { id?: number; title: string; columns: number }) =>
+    http.post<{ id: number }>('/panel/itemIconPage/save', page),
+  deletePage: (id: number) => http.delete(`/panel/itemIconPage/${id}`),
+  sortPages: (ids: number[]) => http.post('/panel/itemIconPage/sort', { ids }),
   health: (urls: string[]) => http.post<HealthResult[]>('/panel/health', { urls }),
   importBookmarks: (form: FormData) =>
     http.post<{ groups: number; items: number; skipped: number; total: number }>(

@@ -93,6 +93,11 @@ watch(
 
 const isEdit = computed(() => form.id > 0)
 
+function groupLabel(group: ItemGroup): string {
+  const page = panel.pages.find((item) => item.id === group.pageId)
+  return page ? `${page.title} / ${group.title}` : group.title
+}
+
 function switchType(type: 1 | 2 | 3) {
   activeType.value = type
   form.icon.itemType = type
@@ -326,7 +331,7 @@ const previewIcon = computed<IconConfig>(() => ({
           <label class="label">所属分组</label>
           <select v-model.number="form.itemIconGroupId" class="field">
             <option v-for="group in groups" :key="group.id" :value="group.id">
-              {{ group.title }}
+              {{ groupLabel(group) }}
             </option>
           </select>
         </div>

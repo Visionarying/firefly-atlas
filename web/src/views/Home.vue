@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Globe2,
   House,
+  LayoutGrid,
   LogIn,
   LogOut,
   Moon,
@@ -60,6 +61,8 @@ const pageStyle = computed(() => ({
   padding: `${config.marginTop}vh ${config.marginX}px ${config.marginBottom}vh`,
   '--item-gap': `${config.itemGap}px`,
 }))
+
+const pageColumns = computed(() => panel.currentPage?.columns || 1)
 
 const logoStyle = computed(() => ({
   fontFamily: config.logoFontFamily,
@@ -275,11 +278,11 @@ function openRenameGroup(group: ItemGroup) {
 async function onPromptConfirm(value: string) {
   try {
     if (promptMode.value === 'add') {
-      const res = await panelApi.saveGroup({ title: value })
-      panel.groups.push({ id: res.id, title: value, sort: panel.groups.length })
+      const res = await panelApi.saveGroup({ title: value, pageId: panel.currentPageId })
+      panel.groups.push({ id: res.id, pageId: panel.currentPageId, title: value, sort: panel.groups.length })
       message.success('分组已创建')
     } else if (promptGroup.value) {
-      await panelApi.saveGroup({ id: promptGroup.value.id, title: value })
+      await panelApi.saveGroup({ id: promptGroup.value.id, pageId: promptGroup.value.pageId, title: value })
       promptGroup.value.title = value
       message.success('分组已重命名')
     }
@@ -376,6 +379,20 @@ function onUserMenu(key: string) {
     </div>
 
     <main class="page" :style="pageStyle">
+      <nav v-if="panel.pages.length > 1" class="page-tabs">
+        <button
+          v-for="page in panel.pages"
+          :key="page.id"
+          type="button"
+          class="page-tab"
+          :class="{ active: page.id === panel.currentPageId }"
+          @click="panel.setCurrentPage(page.id)"
+        >
+          <LayoutGrid :size="13" />
+          {{ page.title }}
+        </button>
+      </nav>
+
       <NoticeBanner v-if="notice" :title="notice.title" :content="notice.content" />
 
       <header v-if="config.showHeader" class="hero" :class="heroClass">
@@ -388,24 +405,26 @@ function onUserMenu(key: string) {
       <SystemMonitor v-if="config.showSystemMonitor" />
 
       <div class="groups">
-        <GroupSection
-          v-for="group in panel.groups"
-          :key="group.id"
-          :group="group"
-          :items="panel.itemsByGroup.get(group.id) || []"
-          :edit-mode="panel.editMode"
-          :health-map="healthMap"
-          @open="onOpenItem"
-          @edit="openEditItem"
-          @delete="deleteItem"
-          @context="openContext"
-          @add="openAddItem"
-          @rename="openRenameGroup"
-          @remove="removeGroup"
-          @sort="onSortItems"
-        />
+        <div class="groups-grid" :class="`cols-${pageColumns}`">
+          <GroupSection
+            v-for="group in panel.currentGroups"
+            :key="group.id"
+            :group="group"
+            :items="panel.itemsByGroup.get(group.id) || []"
+            :edit-mode="panel.editMode"
+            :health-map="healthMap"
+            @open="onOpenItem"
+            @edit="openEditItem"
+            @delete="deleteItem"
+            @context="openContext"
+            @add="openAddItem"
+            @rename="openRenameGroup"
+            @remove="removeGroup"
+            @sort="onSortItems"
+          />
+        </div>
 
-        <div v-if="panel.loaded && panel.groups.length === 0" class="empty-state">
+        <div v-if="panel.loaded && panel.currentGroups.length === 0" class="empty-state">
           <div class="empty-icon">F</div>
           <h3>还没有任何分组</h3>
           <p>{{ auth.isLoggedIn ? '点击右上角编辑按钮，开始搭建你的导航面板。' : '管理员还没有公开任何内容。' }}</p>
@@ -555,6 +574,63 @@ function onUserMenu(key: string) {
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   box-shadow: 0 18px 50px -28px rgba(var(--shadow-color), 0.5);
+}
+
+.page-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 20px auto 0;
+  padding: 4px;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(var(--glass-rgb), 0.42);
+  backdrop-filter: blur(18px);
+}
+.page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 13px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.16s;
+}
+.page-tab:hover {
+  color: var(--text-strong);
+}
+.page-tab.active {
+  color: var(--accent-strong, #059669);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 22px;
+  align-items: start;
+}
+.groups-grid.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.groups-grid.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 760px) {
+  .groups-grid.cols-2,
+  .groups-grid.cols-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .groups {

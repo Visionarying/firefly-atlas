@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"firefly-atlas/database"
 	"firefly-atlas/global"
 	"firefly-atlas/models"
 )
@@ -138,8 +139,9 @@ func SortItemIcons(c *gin.Context) {
 }
 
 type groupPayload struct {
-	ID    uint   `json:"id"`
-	Title string `json:"title"`
+	ID     uint   `json:"id"`
+	PageID uint   `json:"pageId"`
+	Title  string `json:"title"`
 }
 
 func SaveItemIconGroup(c *gin.Context) {
@@ -158,10 +160,19 @@ func SaveItemIconGroup(c *gin.Context) {
 		Fail(c, "请填写分组名称")
 		return
 	}
+	pageID := req.PageID
+	if pageID == 0 {
+		pageID = database.EnsureDefaultPage(user.ID).ID
+	}
+	var page models.ItemIconPage
+	if err := global.DB.Where("id = ? AND user_id = ?", pageID, user.ID).First(&page).Error; err != nil {
+		Fail(c, "页面不存在")
+		return
+	}
 	if req.ID > 0 {
 		res := global.DB.Model(&models.ItemIconGroup{}).
 			Where("id = ? AND user_id = ?", req.ID, user.ID).
-			Update("title", req.Title)
+			Updates(map[string]interface{}{"title": req.Title, "page_id": pageID})
 		if res.RowsAffected == 0 {
 			Fail(c, "分组不存在")
 			return
@@ -170,9 +181,10 @@ func SaveItemIconGroup(c *gin.Context) {
 		return
 	}
 	var maxSort int
-	global.DB.Model(&models.ItemIconGroup{}).Where("user_id = ?", user.ID).
+	global.DB.Model(&models.ItemIconGroup{}).
+		Where("user_id = ? AND page_id = ?", user.ID, pageID).
 		Select("COALESCE(MAX(sort), -1)").Scan(&maxSort)
-	group := models.ItemIconGroup{UserID: user.ID, Title: req.Title, Sort: maxSort + 1}
+	group := models.ItemIconGroup{UserID: user.ID, PageID: pageID, Title: req.Title, Sort: maxSort + 1}
 	if err := global.DB.Create(&group).Error; err != nil {
 		Fail(c, "保存失败")
 		return

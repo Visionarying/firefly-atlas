@@ -4,7 +4,16 @@ import { panelApi } from '@/api'
 import { isCurrentHostPrivate, normalizeUrl, openExternal, probeLanReachable } from '@/utils/url'
 import { defaultConfig, defaultSearchEngines } from './defaults'
 import { useAuthStore } from './auth'
-import type { ItemIcon, PanelConfig, PanelData, PanelSettings, SearchEngine, ThemeMode } from '@/typings'
+import type {
+  ItemGroup,
+  ItemIcon,
+  ItemIconPage,
+  PanelConfig,
+  PanelData,
+  PanelSettings,
+  SearchEngine,
+  ThemeMode,
+} from '@/typings'
 
 export type LanMode = 'auto' | 'lan' | 'wan'
 
@@ -18,7 +27,9 @@ export const usePanelStore = defineStore('panel', () => {
 
   const config = reactive<PanelConfig>(mergeConfig())
   const searchEngines = ref<SearchEngine[]>([...defaultSearchEngines])
-  const groups = ref<{ id: number; title: string; sort: number }[]>([])
+  const pages = ref<ItemIconPage[]>([])
+  const currentPageId = ref(0)
+  const groups = ref<ItemGroup[]>([])
   const items = ref<ItemIcon[]>([])
   const settings = ref<PanelSettings>({})
   const loaded = ref(false)
@@ -44,6 +55,14 @@ export const usePanelStore = defineStore('panel', () => {
   const isPublic = computed(() => !auth.isLoggedIn)
   const canEdit = computed(() => auth.isLoggedIn)
 
+  const currentPage = computed(() => pages.value.find((page) => page.id === currentPageId.value) || null)
+  const currentGroups = computed(() =>
+    groups.value
+      .filter((group) => group.pageId === currentPageId.value)
+      .slice()
+      .sort((a, b) => a.sort - b.sort || a.id - b.id),
+  )
+
   const itemsByGroup = computed(() => {
     const map = new Map<number, ItemIcon[]>()
     for (const group of groups.value) map.set(group.id, [])
@@ -60,10 +79,25 @@ export const usePanelStore = defineStore('panel', () => {
     if (Array.isArray(data.searchEngines) && data.searchEngines.length) {
       searchEngines.value = data.searchEngines
     }
+    pages.value = (data.pages || []).slice().sort((a, b) => a.sort - b.sort || a.id - b.id)
     groups.value = (data.groups || []).slice().sort((a, b) => a.sort - b.sort || a.id - b.id)
     items.value = (data.items || []).slice().sort((a, b) => a.sort - b.sort || a.id - b.id)
+    const savedPage = Number(localStorage.getItem('firefly_page_id') || 0)
+    if (pages.value.some((page) => page.id === savedPage)) {
+      currentPageId.value = savedPage
+    } else if (pages.value.length > 0) {
+      currentPageId.value = pages.value[0].id
+    } else {
+      currentPageId.value = 0
+    }
     settings.value = data.settings || {}
     loaded.value = true
+  }
+
+  function setCurrentPage(id: number) {
+    if (!pages.value.some((page) => page.id === id)) return
+    currentPageId.value = id
+    localStorage.setItem('firefly_page_id', String(id))
   }
 
   async function load() {
@@ -176,6 +210,8 @@ export const usePanelStore = defineStore('panel', () => {
   return {
     config,
     searchEngines,
+    pages,
+    currentPageId,
     groups,
     items,
     settings,
@@ -190,9 +226,12 @@ export const usePanelStore = defineStore('panel', () => {
     isDark,
     isPublic,
     canEdit,
+    currentPage,
+    currentGroups,
     itemsByGroup,
     load,
     applyData,
+    setCurrentPage,
     detectLan,
     resolveUrl,
     openItem,

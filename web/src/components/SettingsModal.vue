@@ -121,15 +121,94 @@ async function changePassword() {
   }
 }
 
-/* ---------- groups ---------- */
+/* ---------- pages & groups ---------- */
 const newGroup = ref('')
+const activePageId = ref(0)
+const newPageTitle = ref('')
+
+const pageGroups = computed(() =>
+  panel.groups
+    .filter((group) => group.pageId === activePageId.value)
+    .slice()
+    .sort((a, b) => a.sort - b.sort || a.id - b.id),
+)
+
+const activePage = computed(
+  () => panel.pages.find((page) => page.id === activePageId.value) || null,
+)
+
+function ensureActivePage() {
+  if (panel.pages.some((page) => page.id === activePageId.value)) return
+  activePageId.value = panel.currentPageId || panel.pages[0]?.id || 0
+}
+
+async function addPage() {
+  const title = newPageTitle.value.trim()
+  if (!title) return
+  try {
+    const res = await panelApi.savePage({ title, columns: 1 })
+    panel.pages.push({ id: res.id, title, sort: panel.pages.length, columns: 1 })
+    activePageId.value = res.id
+    panel.setCurrentPage(res.id)
+    newPageTitle.value = ''
+    message.success('页面已创建')
+  } catch (e: any) {
+    message.error(e.message || '创建页面失败')
+  }
+}
+
+async function savePageMeta() {
+  if (!activePage.value) return
+  try {
+    await panelApi.savePage({
+      id: activePage.value.id,
+      title: activePage.value.title.trim() || '未命名页面',
+      columns: activePage.value.columns,
+    })
+    message.success('页面设置已保存')
+  } catch (e: any) {
+    message.error(e.message || '保存页面失败')
+  }
+}
+
+function removePage() {
+  if (!activePage.value) return
+  dialog.warning({
+    title: '删除页面',
+    content: `确定删除「${activePage.value.title}」及页面内所有分组和卡片吗？`,
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      const pageID = activePage.value?.id
+      if (!pageID) return
+      try {
+        await panelApi.deletePage(pageID)
+        panel.pages = panel.pages.filter((page) => page.id !== pageID)
+        const removedGroups = panel.groups.filter((group) => group.pageId === pageID)
+        const removedGroupIDs = new Set(removedGroups.map((group) => group.id))
+        panel.groups = panel.groups.filter((group) => group.pageId !== pageID)
+        panel.items = panel.items.filter((item) => !removedGroupIDs.has(item.itemIconGroupId))
+        activePageId.value = panel.pages[0]?.id || 0
+        panel.setCurrentPage(activePageId.value)
+        message.success('页面已删除')
+      } catch (e: any) {
+        message.error(e.message || '删除页面失败')
+      }
+    },
+  })
+}
 
 async function addGroup() {
   const title = newGroup.value.trim()
   if (!title) return
+  if (!activePageId.value) {
+    message.warning('请先创建或选择一个页面')
+    return
+  }
   try {
-    const res = await panelApi.saveGroup({ title })
-    panel.groups.push({ id: res.id, title, sort: panel.groups.length })
+    const res = await panelApi.saveGroup({ title, pageId: activePageId.value })
+    const maxSort = Math.max(-1, ...pageGroups.value.map((group) => group.sort)) + 1
+    panel.groups.push({ id: res.id, pageId: activePageId.value, title, sort: maxSort })
     newGroup.value = ''
     message.success('分组已创建')
   } catch (e: any) {
@@ -137,10 +216,10 @@ async function addGroup() {
   }
 }
 
-async function renameGroup(group: { id: number; title: string }) {
+async function renameGroup(group: { id: number; pageId: number; title: string }) {
   if (!group.title.trim()) return
   try {
-    await panelApi.saveGroup({ id: group.id, title: group.title.trim() })
+    await panelApi.saveGroup({ id: group.id, pageId: group.pageId, title: group.title.trim() })
   } catch (e: any) {
     message.error(e.message || '重命名失败')
   }
@@ -166,15 +245,14 @@ function removeGroup(group: { id: number; title: string }) {
 }
 
 async function moveGroup(index: number, delta: number) {
+  const list = pageGroups.value.slice()
   const target = index + delta
-  if (target < 0 || target >= panel.groups.length) return
-  const list = [...panel.groups]
+  if (target < 0 || target >= list.length) return
   const [item] = list.splice(index, 1)
   list.splice(target, 0, item)
-  list.forEach((g, i) => (g.sort = i))
-  panel.groups = list
+  list.forEach((group, i) => (group.sort = i))
   try {
-    await panelApi.sortGroups(list.map((g) => g.id))
+    await panelApi.sortGroups(list.map((group) => group.id))
   } catch {
     /* ignore */
   }
@@ -647,6 +725,7 @@ watch(
     if (active.value === 'library') void loadFiles()
     if (active.value === 'account') void loadUsers()
     if (active.value === 'cloud') void refreshCloud()
+    if (active.value === 'groups') ensureActivePage()
   },
 )
 
@@ -654,6 +733,19 @@ watch(active, (value) => {
   if (value === 'library') void loadFiles()
   if (value === 'account') void loadUsers()
   if (value === 'cloud') void refreshCloud()
+  if (value === 'groups') ensureActivePage()
+})
+
+watch(
+  () => panel.pages,
+  () => {
+    if (props.show && active.value === 'groups') ensureActivePage()
+  },
+  { deep: true },
+)
+
+watch(activePageId, (value) => {
+  if (value) panel.setCurrentPage(value)
 })
 
 watch(libraryType, () => {
@@ -1502,12 +1594,56 @@ const version = '1.1.2'
         <!-- 分组管理 -->
         <section v-else-if="active === 'groups'" class="pane">
           <header class="pane-head">
-            <h2>分组管理</h2>
-            <p>调整分组顺序与名称，删除会同时移除组内卡片。</p>
+            <h2>页面与分组</h2>
+            <p>每个页面拥有自己的分组和卡片；分页只改变展示位置，不会移动数据到别的账号。</p>
           </header>
 
           <div class="block">
-            <div class="group-row" v-for="(group, index) in panel.groups" :key="group.id">
+            <h3>页面</h3>
+            <div class="row">
+              <div><div class="row-label">当前页面</div></div>
+              <select v-model.number="activePageId" class="field w-220">
+                <option v-for="page in panel.pages" :key="page.id" :value="page.id">{{ page.title }}</option>
+              </select>
+            </div>
+            <template v-if="activePage">
+              <div class="row">
+                <div><div class="row-label">页面名称</div></div>
+                <div class="inline-set">
+                  <input v-model="activePage.title" class="field w-220" maxlength="64" @change="savePageMeta" />
+                </div>
+              </div>
+              <div class="row">
+                <div><div class="row-label">分栏</div><div class="row-hint">桌面端显示为 1 / 2 / 3 列，手机自动单列。</div></div>
+                <select v-model.number="activePage.columns" class="field w-120" @change="savePageMeta">
+                  <option :value="1">1 列</option>
+                  <option :value="2">2 列</option>
+                  <option :value="3">3 列</option>
+                </select>
+              </div>
+              <div class="block-foot">
+                <button class="btn danger" type="button" :disabled="panel.pages.length <= 1" @click="removePage">
+                  <Trash2 :size="14" /> 删除当前页面
+                </button>
+              </div>
+            </template>
+            <div class="add-row">
+              <input
+                v-model="newPageTitle"
+                class="field"
+                placeholder="新页面名称"
+                maxlength="64"
+                @keyup.enter="addPage"
+              />
+              <button class="btn primary" type="button" @click="addPage">
+                <Plus :size="14" /> 新建页面
+              </button>
+            </div>
+          </div>
+
+          <div class="block">
+            <h3>{{ activePage?.title || '当前页面' }} · 分组</h3>
+            <div class="group-row" v-for="(group, index) in pageGroups" :key="group.id">
               <span class="order">{{ index + 1 }}</span>
               <input v-model="group.title" class="field" @change="renameGroup(group)" />
               <div class="group-tools">
@@ -1517,7 +1653,7 @@ const version = '1.1.2'
                 <button
                   class="mini icon"
                   title="下移"
-                  :disabled="index === panel.groups.length - 1"
+                  :disabled="index === pageGroups.length - 1"
                   @click="moveGroup(index, 1)"
                 >
                   <ArrowDown :size="13" />

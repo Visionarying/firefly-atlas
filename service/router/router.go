@@ -84,6 +84,10 @@ func Init() *gin.Engine {
 			auth.DELETE("/panel/itemIconGroup/:id", api.DeleteItemIconGroup)
 			auth.POST("/panel/itemIconGroup/sort", api.SortItemIconGroups)
 
+			auth.POST("/panel/itemIconPage/save", api.SaveItemPage)
+			auth.DELETE("/panel/itemIconPage/:id", api.DeleteItemPage)
+			auth.POST("/panel/itemIconPage/sort", api.SortItemPages)
+
 			auth.GET("/panel/backup/export", api.ExportBackup)
 			auth.POST("/panel/backup/import", api.ImportBackup)
 			auth.POST("/panel/import/bookmarks", api.ImportBookmarks)

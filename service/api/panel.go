@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"firefly-atlas/database"
 	"firefly-atlas/global"
 	"firefly-atlas/models"
 )
@@ -13,6 +14,7 @@ type PanelData struct {
 	PublicVisitMode bool                   `json:"publicVisitMode"`
 	PanelConfig     json.RawMessage        `json:"panelConfig"`
 	SearchEngines   json.RawMessage        `json:"searchEngines"`
+	Pages           []models.ItemIconPage  `json:"pages"`
 	Groups          []models.ItemIconGroup `json:"groups"`
 	Items           []models.ItemIcon      `json:"items"`
 	Settings        map[string]string      `json:"settings"`
@@ -40,10 +42,14 @@ func PanelPublic(c *gin.Context) {
 func buildPanelData(userID uint) PanelData {
 	data := PanelData{
 		PublicVisitMode: global.PublicVisitMode,
+		Pages:           []models.ItemIconPage{},
 		Groups:          []models.ItemIconGroup{},
 		Items:           []models.ItemIcon{},
 		Settings:        map[string]string{},
 	}
+
+	database.EnsureDefaultPage(userID)
+	global.DB.Where("user_id = ?", userID).Order("sort asc, id asc").Find(&data.Pages)
 
 	var cfg models.UserConfig
 	if err := global.DB.Where("user_id = ?", userID).First(&cfg).Error; err != nil {
@@ -57,7 +63,7 @@ func buildPanelData(userID uint) PanelData {
 	data.PanelConfig = json.RawMessage(cfg.PanelJSON)
 	data.SearchEngines = json.RawMessage(cfg.SearchEngineJSON)
 
-	global.DB.Where("user_id = ?", userID).Order("sort asc, id asc").Find(&data.Groups)
+	global.DB.Where("user_id = ?", userID).Order("page_id asc, sort asc, id asc").Find(&data.Groups)
 	global.DB.Where("user_id = ?", userID).Order("sort asc, id asc").Find(&data.Items)
 	for i := range data.Items {
 		_ = json.Unmarshal([]byte(data.Items[i].IconJSON), &data.Items[i].Icon)

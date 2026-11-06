@@ -18,8 +18,21 @@ type User struct {
 type ItemIconGroup struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	UserID    uint      `gorm:"index" json:"userId"`
+	PageID    uint      `gorm:"index;default:0" json:"pageId"`
 	Title     string    `gorm:"size:128" json:"title"`
 	Sort      int       `gorm:"default:0" json:"sort"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// ItemIconPage is a user-defined board inside the panel. Groups and cards belong
+// to exactly one page; existing v1.1 groups are migrated into a default page.
+type ItemIconPage struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserID    uint      `gorm:"index" json:"userId"`
+	Title     string    `gorm:"size:64" json:"title"`
+	Sort      int       `gorm:"default:0" json:"sort"`
+	Columns   int       `gorm:"default:1" json:"columns"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

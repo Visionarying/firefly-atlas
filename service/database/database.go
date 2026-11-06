@@ -4,10 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/glebarez/sqlite"
 	"golang.org/x/crypto/bcrypt"
@@ -30,6 +32,7 @@ func Init() error {
 
 	if err := db.AutoMigrate(
 		&models.User{},
+		&models.ItemIconPage{},
 		&models.ItemIconGroup{},
 		&models.ItemIcon{},
 		&models.UserConfig{},
@@ -41,6 +44,7 @@ func Init() error {
 	}
 
 	seed()
+	migratePages()
 	migrateBranding()
 	return nil
 }
@@ -155,6 +159,65 @@ func seedPanel(userID uint) {
 		PanelJSON:        models.DefaultPanelConfig,
 		SearchEngineJSON: models.DefaultSearchEngines,
 	})
+}
+
+// EnsureDefaultPage returns the user's first page, creating a default one when
+// the account has no pages yet.
+func EnsureDefaultPage(userID uint) models.ItemIconPage {
+	var page models.ItemIconPage
+	if err := global.DB.Where("user_id = ?", userID).Order("sort asc, id asc").First(&page).Error; err == nil {
+		return page
+	}
+	page = models.ItemIconPage{UserID: userID, Title: "我的主页", Sort: 0, Columns: 1}
+	_ = global.DB.Create(&page).Error
+	return page
+}
+
+// migratePages assigns every legacy group to a page. It is idempotent and only
+// touches groups whose page_id is still zero.
+func migratePages() {
+	db := global.DB
+	var count int64
+	db.Model(&models.ItemIconGroup{}).Where("page_id = 0 OR page_id IS NULL").Count(&count)
+	if count == 0 {
+		return
+	}
+	backupDatabaseFile()
+
+	var userIDs []uint
+	db.Model(&models.ItemIconGroup{}).Where("page_id = 0 OR page_id IS NULL").
+		Distinct().Pluck("user_id", &userIDs)
+	for _, userID := range userIDs {
+		page := EnsureDefaultPage(userID)
+		if page.ID == 0 {
+			continue
+		}
+		db.Model(&models.ItemIconGroup{}).
+			Where("user_id = ? AND (page_id = 0 OR page_id IS NULL)", userID).
+			Update("page_id", page.ID)
+	}
+}
+
+func backupDatabaseFile() {
+	src := filepath.Join(global.DataDir, "database.db")
+	if _, err := os.Stat(src); err != nil {
+		return
+	}
+	dst := src + ".bak-" + time.Now().Format("20060102-150405")
+	in, err := os.Open(src)
+	if err != nil {
+		return
+	}
+	defer in.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		return
+	}
+	if _, err := io.Copy(out, in); err == nil {
+		_ = out.Sync()
+		log.Printf("[firefly-atlas] database backup before page migration: %s", dst)
+	}
+	_ = out.Close()
 }
 
 func migrateBranding() {

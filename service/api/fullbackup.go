@@ -44,6 +44,7 @@ type siteBackup struct {
 	Version     string                 `json:"version"`
 	ExportedAt  string                 `json:"exportedAt"`
 	Users       []backupUser           `json:"users"`
+	Pages       []models.ItemIconPage  `json:"pages"`
 	Groups      []models.ItemIconGroup `json:"groups"`
 	Items       []backupItem           `json:"items"`
 	UserConfigs []backupUserConfig     `json:"userConfigs"`
@@ -69,6 +70,7 @@ func buildSiteBackup() (*siteBackup, error) {
 		Version:     global.Version,
 		ExportedAt:  time.Now().Format(time.RFC3339),
 		Users:       []backupUser{},
+		Pages:       []models.ItemIconPage{},
 		Groups:      []models.ItemIconGroup{},
 		Items:       []backupItem{},
 		UserConfigs: []backupUserConfig{},
@@ -87,7 +89,10 @@ func buildSiteBackup() (*siteBackup, error) {
 		})
 	}
 
-	if err := global.DB.Order("sort asc, id asc").Find(&data.Groups).Error; err != nil {
+	if err := global.DB.Order("sort asc, id asc").Find(&data.Pages).Error; err != nil {
+		return nil, err
+	}
+	if err := global.DB.Order("page_id asc, sort asc, id asc").Find(&data.Groups).Error; err != nil {
 		return nil, err
 	}
 	var items []models.ItemIcon
@@ -292,6 +297,7 @@ func ImportSiteBackup(c *gin.Context) {
 
 type restoreStats struct {
 	Users   int `json:"users"`
+	Pages   int `json:"pages"`
 	Groups  int `json:"groups"`
 	Items   int `json:"items"`
 	Files   int `json:"files"`
@@ -399,7 +405,7 @@ func restoreSiteBackupZip(zipPath string, current *models.User) (*restoreStats, 
 }
 
 func applySiteRestore(data *siteBackup, current *models.User, stagingUploads string) (*restoreStats, error) {
-	if len(data.Users) == 0 && len(data.Groups) == 0 && len(data.Items) == 0 && len(data.Settings) == 0 {
+	if len(data.Users) == 0 && len(data.Pages) == 0 && len(data.Groups) == 0 && len(data.Items) == 0 && len(data.Settings) == 0 {
 		return nil, errors.New("备份内容为空，已停止还原")
 	}
 	stats := &restoreStats{}
@@ -418,6 +424,10 @@ func applySiteRestore(data *siteBackup, current *models.User, stagingUploads str
 		return nil, err
 	}
 	if err := tx.Where("1 = 1").Delete(&models.ItemIconGroup{}).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	if err := tx.Where("1 = 1").Delete(&models.ItemIconPage{}).Error; err != nil {
 		tx.Rollback()
 		return nil, err
 	}
@@ -477,14 +487,54 @@ func applySiteRestore(data *siteBackup, current *models.User, stagingUploads str
 		userMap[0] = current.ID
 	}
 
+	pageMap := map[uint]uint{}
+	defaultPages := map[uint]uint{}
+	for _, p := range data.Pages {
+		uid, ok := userMap[p.UserID]
+		if !ok {
+			uid = current.ID
+		}
+		columns := p.Columns
+		if columns < 1 || columns > 3 {
+			columns = 1
+		}
+		page := models.ItemIconPage{
+			UserID: uid, Title: p.Title, Sort: p.Sort, Columns: columns,
+			CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+		}
+		if err := tx.Create(&page).Error; err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		pageMap[p.ID] = page.ID
+		if defaultPages[uid] == 0 {
+			defaultPages[uid] = page.ID
+		}
+		stats.Pages++
+	}
+
 	groupMap := map[uint]uint{}
 	for _, g := range data.Groups {
 		uid, ok := userMap[g.UserID]
 		if !ok {
 			uid = current.ID
 		}
+		pageID := pageMap[g.PageID]
+		if pageID == 0 {
+			pageID = defaultPages[uid]
+			if pageID == 0 {
+				page := models.ItemIconPage{UserID: uid, Title: "我的主页", Columns: 1}
+				if err := tx.Create(&page).Error; err != nil {
+					tx.Rollback()
+					return nil, err
+				}
+				pageID = page.ID
+				defaultPages[uid] = pageID
+				stats.Pages++
+			}
+		}
 		group := models.ItemIconGroup{
-			UserID: uid, Title: g.Title, Sort: g.Sort,
+			UserID: uid, PageID: pageID, Title: g.Title, Sort: g.Sort,
 			CreatedAt: g.CreatedAt, UpdatedAt: g.UpdatedAt,
 		}
 		if err := tx.Create(&group).Error; err != nil {

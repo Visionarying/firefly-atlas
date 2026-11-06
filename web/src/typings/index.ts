@@ -20,8 +20,16 @@ export interface ItemIcon {
 
 export interface ItemGroup {
   id: number
+  pageId: number
   title: string
   sort: number
+}
+
+export interface ItemIconPage {
+  id: number
+  title: string
+  sort: number
+  columns: number
 }
 
 export interface SearchEngine {
@@ -82,6 +90,7 @@ export interface PanelData {
   publicVisitMode: boolean
   panelConfig: PanelConfig | null
   searchEngines: SearchEngine[] | null
+  pages: ItemIconPage[]
   groups: ItemGroup[]
   items: ItemIcon[]
   settings: PanelSettings
@@ -178,6 +187,7 @@ export interface CloudSyncResult {
 
 export interface RestoreStats {
   users: number
+  pages?: number
   groups: number
   items: number
   files: number

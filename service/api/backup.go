@@ -21,6 +21,7 @@ type BackupData struct {
 	ExportedAt    string                 `json:"exportedAt"`
 	PanelConfig   json.RawMessage        `json:"panelConfig"`
 	SearchEngines json.RawMessage        `json:"searchEngines"`
+	Pages         []models.ItemIconPage  `json:"pages,omitempty"`
 	Groups        []models.ItemIconGroup `json:"groups"`
 	Items         []backupItem           `json:"items"`
 	Settings      []models.SystemSetting `json:"settings"`
@@ -35,6 +36,7 @@ func ExportBackup(c *gin.Context) {
 	data := BackupData{
 		Version:    global.Version,
 		ExportedAt: time.Now().Format(time.RFC3339),
+		Pages:      []models.ItemIconPage{},
 		Groups:     []models.ItemIconGroup{},
 		Items:      []backupItem{},
 	}
@@ -45,7 +47,8 @@ func ExportBackup(c *gin.Context) {
 		data.SearchEngines = json.RawMessage(cfg.SearchEngineJSON)
 	}
 
-	global.DB.Where("user_id = ?", user.ID).Order("sort asc, id asc").Find(&data.Groups)
+	global.DB.Where("user_id = ?", user.ID).Order("sort asc, id asc").Find(&data.Pages)
+	global.DB.Where("user_id = ?", user.ID).Order("page_id asc, sort asc, id asc").Find(&data.Groups)
 	var items []models.ItemIcon
 	global.DB.Where("user_id = ?", user.ID).Order("sort asc, id asc").Find(&items)
 	for _, it := range items {
@@ -85,12 +88,45 @@ func ImportBackup(c *gin.Context) {
 		if err := tx.Where("user_id = ?", user.ID).Delete(&models.ItemIconGroup{}).Error; err != nil {
 			return err
 		}
+		if err := tx.Where("user_id = ?", user.ID).Delete(&models.ItemIconPage{}).Error; err != nil {
+			return err
+		}
+
+		pageMap := map[uint]uint{}
+		fallbackPageID := uint(0)
+		for _, p := range data.Pages {
+			oldID := p.ID
+			p.ID = 0
+			p.UserID = user.ID
+			if p.Columns < 1 || p.Columns > 3 {
+				p.Columns = 1
+			}
+			if err := tx.Create(&p).Error; err != nil {
+				return err
+			}
+			pageMap[oldID] = p.ID
+			if fallbackPageID == 0 {
+				fallbackPageID = p.ID
+			}
+		}
+		if fallbackPageID == 0 {
+			page := models.ItemIconPage{UserID: user.ID, Title: "我的主页", Columns: 1}
+			if err := tx.Create(&page).Error; err != nil {
+				return err
+			}
+			fallbackPageID = page.ID
+		}
 
 		groupMap := map[uint]uint{}
 		for _, g := range data.Groups {
 			oldID := g.ID
 			g.ID = 0
 			g.UserID = user.ID
+			if newPage, ok := pageMap[g.PageID]; ok {
+				g.PageID = newPage
+			} else {
+				g.PageID = fallbackPageID
+			}
 			if err := tx.Create(&g).Error; err != nil {
 				return err
 			}
