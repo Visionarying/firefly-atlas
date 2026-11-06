@@ -110,6 +110,7 @@ export interface FileRecord {
   userId: number
   fileName: string
   src: string
+  thumb: string
   fileType: number
   size: number
   syncStatus: number

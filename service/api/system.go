@@ -65,6 +65,7 @@ func UploadFile(c *gin.Context) {
 		Size:     file.Size,
 	}
 	global.DB.Create(&record)
+	ensureThumb(&record)
 	go dualWriteNewFile(record.ID)
 	OK(c, record)
 }
@@ -107,6 +108,7 @@ func DeleteFile(c *gin.Context) {
 	if strings.HasPrefix(f.Src, "/uploads/") {
 		_ = os.Remove(filepath.Join(global.DataDir, filepath.FromSlash(strings.TrimPrefix(f.Src, "/"))))
 	}
+	removeThumb(f)
 	global.DB.Delete(&f)
 	OK(c, nil)
 }

@@ -440,6 +440,10 @@ func syncCloudKeys(ctx context.Context, client cloudstore.Client, keys []string,
 				"src": src, "size": int64(len(data)), "sync_status": 2,
 				"cloud_url": client.PublicURL(clean), "synced_at": time.Now(),
 			})
+			existing.Src = src
+			existing.Size = int64(len(data))
+			existing.FileType = category
+			ensureThumb(&existing)
 		} else {
 			record := models.File{
 				UserID: ownerID, FileName: path.Base(clean), Src: src,
@@ -447,6 +451,7 @@ func syncCloudKeys(ctx context.Context, client cloudstore.Client, keys []string,
 				CloudKey: clean, CloudURL: client.PublicURL(clean), SyncedAt: ptrTime(time.Now()),
 			}
 			global.DB.Create(&record)
+			ensureThumb(&record)
 		}
 		success++
 	}

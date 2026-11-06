@@ -84,6 +84,7 @@ type File struct {
 	UserID      uint       `gorm:"index" json:"userId"`
 	FileName    string     `gorm:"size:255" json:"fileName"`
 	Src         string     `gorm:"size:1024" json:"src"`
+	Thumb       string     `gorm:"size:1024" json:"thumb"`
 	FileType    int        `gorm:"index" json:"fileType"` // 1 wallpaper, 2 icon
 	Size        int64      `json:"size"`
 	SyncStatus  int        `gorm:"default:0" json:"syncStatus"` // 0 local, 1 pending, 2 synced, 3 rejected

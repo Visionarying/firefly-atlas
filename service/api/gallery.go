@@ -40,6 +40,7 @@ func BatchDeleteFiles(c *gin.Context) {
 		if local, err := localUploadPath(f.Src); err == nil {
 			_ = os.Remove(local)
 		}
+		removeThumb(f)
 	}
 	if len(files) > 0 {
 		ids := make([]uint, 0, len(files))
