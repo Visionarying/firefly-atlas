@@ -470,7 +470,7 @@ const previewIcon = computed<IconConfig>(() => ({
                 :title="icon.fileName"
                 @click="pickGalleryIcon(icon)"
               >
-                <img :src="icon.src" :alt="icon.fileName" loading="lazy" />
+                <img :src="icon.thumb || icon.src" :alt="icon.fileName" loading="lazy" />
               </button>
             </div>
           </div>

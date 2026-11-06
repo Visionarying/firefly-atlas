@@ -109,6 +109,7 @@ func DeleteFile(c *gin.Context) {
 		_ = os.Remove(filepath.Join(global.DataDir, filepath.FromSlash(strings.TrimPrefix(f.Src, "/"))))
 	}
 	removeThumb(f)
+	removeOriginal(f.Src)
 	global.DB.Delete(&f)
 	OK(c, nil)
 }

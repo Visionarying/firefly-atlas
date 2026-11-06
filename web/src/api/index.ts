@@ -35,6 +35,8 @@ export const panelApi = {
   saveConfig: (panelConfig: PanelConfig, searchEngines: SearchEngine[]) =>
     http.post('/panel/config/save', { panelConfig, searchEngines }),
   saveItem: (item: Partial<ItemIcon>) => http.post<{ id: number }>('/panel/itemIcon/save', item),
+  moveItem: (id: number, groupId: number) =>
+    http.post<{ id: number; groupId: number }>('/panel/itemIcon/move', { id, groupId }),
   deleteItem: (id: number) => http.delete(`/panel/itemIcon/${id}`),
   sortItems: (ids: number[]) => http.post('/panel/itemIcon/sort', { ids }),
   saveGroup: (group: { id?: number; pageId?: number; title: string }) =>
@@ -47,11 +49,15 @@ export const panelApi = {
   sortPages: (ids: number[]) => http.post('/panel/itemIconPage/sort', { ids }),
   health: (urls: string[]) => http.post<HealthResult[]>('/panel/health', { urls }),
   importBookmarks: (form: FormData) =>
-    http.post<{ groups: number; items: number; skipped: number; total: number }>(
-      '/panel/import/bookmarks',
-      form,
-      { timeout: 120000 },
-    ),
+    http.post<{
+      groups: number
+      reusedGroups: number
+      items: number
+      updated: number
+      skipped: number
+      total: number
+      pageId: number
+    }>('/panel/import/bookmarks', form, { timeout: 120000 }),
 }
 
 export const fileApi = {
@@ -70,6 +76,12 @@ export const fileApi = {
   move: (ids: number[], fileType: 1 | 2) =>
     http.post<{ moved: number }>('/system/file/move', { ids, fileType }),
   rename: (id: number, fileName: string) => http.post('/system/file/rename', { id, fileName }),
+  compress: (ids: number[]) =>
+    http.post<{ compressed: number; skipped: number; failed: number; saved: number; message: string }>(
+      '/system/file/compress',
+      { ids },
+      { timeout: 600000 },
+    ),
   applySync: (ids: number[]) => http.post<{ pending: number }>('/system/file/apply-sync', { ids }),
   uploadCloud: (ids: number[]) =>
     http.post<{ success: number; failed: string[] }>(
@@ -168,6 +180,7 @@ export const cloudApi = {
 }
 
 export const systemApi = {
+  version: () => http.get<{ status: string; version: string }>('/health'),
   site: () => http.get<SiteInfo>('/panel/site'),
   monitor: () => http.get<MonitorData | null>('/system/monitor'),
   publicMonitor: () => http.get<MonitorData | null>('/panel/monitor'),

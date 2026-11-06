@@ -11,6 +11,7 @@ import {
   LogIn,
   LogOut,
   Moon,
+  MoveRight,
   PanelTopOpen,
   Pencil,
   Plus,
@@ -18,6 +19,7 @@ import {
   Sun,
   Trash2,
   UserRound,
+  X,
 } from 'lucide-vue-next'
 import Background from '@/components/Background.vue'
 import Clock from '@/components/Clock.vue'
@@ -33,8 +35,9 @@ import WebViewModal from '@/components/WebViewModal.vue'
 import SystemMonitor from '@/components/SystemMonitor.vue'
 import { usePanelStore } from '@/store/panel'
 import { useAuthStore } from '@/store/auth'
-import { panelApi } from '@/api'
+import { panelApi, systemApi } from '@/api'
 import { normalizeUrl, openExternal } from '@/utils/url'
+import { checkForUpdate, type UpdateCheck } from '@/utils/update'
 import type { ItemGroup, ItemIcon } from '@/typings'
 
 const panel = usePanelStore()
@@ -63,6 +66,54 @@ const pageStyle = computed(() => ({
 }))
 
 const pageColumns = computed(() => panel.currentPage?.columns || 1)
+
+const flatCurrentItems = computed(() =>
+  panel.currentGroups.flatMap((group) => panel.itemsByGroup.get(group.id) || []),
+)
+
+const updateInfo = ref<UpdateCheck | null>(null)
+const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000
+
+async function checkUpdateNotice() {
+  if (!auth.isLoggedIn) return
+  const dismissed = localStorage.getItem('firefly_update_dismissed') || ''
+  try {
+    const cached = JSON.parse(localStorage.getItem('firefly_update_cache') || 'null') as
+      | (UpdateCheck & { at: number })
+      | null
+    if (cached && Date.now() - cached.at < UPDATE_CHECK_INTERVAL) {
+      if (cached.hasUpdate && cached.latest !== dismissed) updateInfo.value = cached
+      return
+    }
+    const info = await systemApi.version()
+    const result = await checkForUpdate(info.version)
+    if (!result) return
+    localStorage.setItem('firefly_update_cache', JSON.stringify({ ...result, at: Date.now() }))
+    if (result.hasUpdate && result.latest !== dismissed) updateInfo.value = result
+  } catch {
+    /* update prompts are best-effort */
+  }
+}
+
+function dismissUpdate() {
+  if (updateInfo.value) localStorage.setItem('firefly_update_dismissed', updateInfo.value.latest)
+  updateInfo.value = null
+}
+
+function onNumericShortcut(event: KeyboardEvent) {
+  if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return
+  if (!/^[0-9]$/.test(event.key)) return
+  if (settingsShow.value || itemModalShow.value || promptShow.value || panel.viewer) return
+  const target = event.target as HTMLElement | null
+  if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) {
+    return
+  }
+  const index = event.key === '0' ? 9 : Number(event.key) - 1
+  const item = flatCurrentItems.value[index]
+  if (!item) return
+  event.preventDefault()
+  onOpenItem(item)
+}
 
 const logoStyle = computed(() => ({
   fontFamily: config.logoFontFamily,
@@ -102,6 +153,21 @@ const ctxOptions = computed<DropdownOption[]>(() => {
   options.push({ label: '页内弹窗打开', key: 'viewer', icon: () => h(PanelTopOpen, { size: 15 }) })
   if (auth.isLoggedIn) {
     options.push({ type: 'divider', key: 'd1' })
+    const targets = panel.groups.filter((group) => group.id !== item.itemIconGroupId)
+    if (targets.length > 0) {
+      options.push({
+        label: '移动到分组',
+        key: 'move',
+        icon: () => h(MoveRight, { size: 15 }),
+        children: targets.map((group) => {
+          const page = panel.pages.find((entry) => entry.id === group.pageId)
+          return {
+            label: page && panel.pages.length > 1 ? `${page.title} / ${group.title}` : group.title,
+            key: `move:${group.id}`,
+          }
+        }),
+      })
+    }
     options.push({ label: '编辑卡片', key: 'edit', icon: () => h(Pencil, { size: 15 }) })
     options.push({ label: '删除卡片', key: 'delete', icon: () => h(Trash2, { size: 15 }) })
   }
@@ -134,12 +200,33 @@ function onCtxSelect(key: string) {
   const item = ctx.item
   ctx.show = false
   if (!item) return
+  if (key.startsWith('move:')) {
+    void moveItemToGroup(item, Number(key.slice(5)))
+    return
+  }
   if (key === 'lan') openContextUrl(item.lanUrl, item)
   else if (key === 'wan') openContextUrl(item.url, item)
   else if (key === 'newtab') openContextUrl(panel.resolveUrl(item), item, true)
   else if (key === 'viewer') panel.openViewer(panel.resolveUrl(item), item.title)
   else if (key === 'edit') openEditItem(item)
   else if (key === 'delete') deleteItem(item)
+}
+
+async function moveItemToGroup(item: ItemIcon, groupId: number) {
+  if (!groupId) return
+  try {
+    await panelApi.moveItem(item.id, groupId)
+    const group = panel.groups.find((entry) => entry.id === groupId)
+    item.itemIconGroupId = groupId
+    item.sort = Number.MAX_SAFE_INTEGER
+    if (group && group.pageId !== panel.currentPageId) {
+      message.success(`已移动到「${group.title}」`)
+    } else {
+      message.success('已移动卡片')
+    }
+  } catch (e: any) {
+    message.error(e.message || '移动失败')
+  }
 }
 
 const notice = computed(() => {
@@ -190,6 +277,7 @@ async function refreshHealth() {
 }
 
 onMounted(async () => {
+  window.addEventListener('keydown', onNumericShortcut)
   try {
     await panel.load()
     if (panel.publicBlocked) {
@@ -198,12 +286,14 @@ onMounted(async () => {
     }
     await refreshHealth()
     healthTimer = window.setInterval(() => void refreshHealth(), 60000)
+    void checkUpdateNotice()
   } catch {
     if (!auth.isLoggedIn) router.replace('/login')
   }
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', onNumericShortcut)
   if (healthTimer) window.clearInterval(healthTimer)
 })
 
@@ -392,6 +482,18 @@ function onUserMenu(key: string) {
           {{ page.title }}
         </button>
       </nav>
+
+      <div v-if="auth.isLoggedIn && updateInfo?.hasUpdate" class="update-banner">
+        <span class="update-dot" />
+        <span>
+          新版本 <strong>v{{ updateInfo.latest }}</strong> 可用
+          <em v-if="updateInfo.name && updateInfo.name !== `v${updateInfo.latest}`">{{ updateInfo.name }}</em>
+        </span>
+        <button class="update-link" type="button" @click="openExternal(updateInfo.url, true)">查看发布页</button>
+        <button class="update-close" type="button" title="本次不再提示" @click="dismissUpdate">
+          <X :size="13" />
+        </button>
+      </div>
 
       <NoticeBanner v-if="notice" :title="notice.title" :content="notice.content" />
 
@@ -612,6 +714,62 @@ function onUserMenu(key: string) {
 .page-tab.active {
   color: var(--accent-strong, #059669);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 14px auto 0;
+  padding: 7px 10px 7px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, rgba(var(--glass-rgb), 0.5));
+  backdrop-filter: blur(16px);
+  color: var(--text-soft);
+  font-size: 12px;
+}
+.update-banner strong {
+  color: var(--accent-strong, #059669);
+}
+.update-banner em {
+  margin-left: 5px;
+  font-style: normal;
+  color: var(--text-faint);
+}
+.update-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.update-link {
+  border: none;
+  background: transparent;
+  color: var(--accent-strong, #059669);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.update-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.update-close:hover {
+  background: rgba(var(--glass-rgb), 0.7);
+  color: var(--text-strong);
 }
 
 .groups-grid {

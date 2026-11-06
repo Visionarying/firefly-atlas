@@ -100,6 +100,46 @@ func SaveItemIcon(c *gin.Context) {
 	OK(c, gin.H{"id": item.ID})
 }
 
+type moveItemPayload struct {
+	ID      uint `json:"id"`
+	GroupID uint `json:"groupId"`
+}
+
+// MoveItemIcon moves one card to another group (possibly on another page)
+// without touching its title, URL or icon configuration.
+func MoveItemIcon(c *gin.Context) {
+	user := CurrentUser(c)
+	if user == nil {
+		Fail(c, "未登录")
+		return
+	}
+	var req moveItemPayload
+	if err := c.ShouldBindJSON(&req); err != nil || req.ID == 0 || req.GroupID == 0 {
+		Fail(c, "参数错误")
+		return
+	}
+	var item models.ItemIcon
+	if err := global.DB.Where("id = ? AND user_id = ?", req.ID, user.ID).First(&item).Error; err != nil {
+		Fail(c, "卡片不存在")
+		return
+	}
+	var group models.ItemIconGroup
+	if err := global.DB.Where("id = ? AND user_id = ?", req.GroupID, user.ID).First(&group).Error; err != nil {
+		Fail(c, "目标分组不存在")
+		return
+	}
+	var maxSort int
+	global.DB.Model(&models.ItemIcon{}).
+		Where("user_id = ? AND item_icon_group_id = ?", user.ID, group.ID).
+		Select("COALESCE(MAX(sort), -1)").Scan(&maxSort)
+	if err := global.DB.Model(&models.ItemIcon{}).Where("id = ?", item.ID).
+		Updates(map[string]interface{}{"item_icon_group_id": group.ID, "sort": maxSort + 1}).Error; err != nil {
+		Fail(c, "移动失败")
+		return
+	}
+	OK(c, gin.H{"id": item.ID, "groupId": group.ID})
+}
+
 func DeleteItemIcon(c *gin.Context) {
 	user := CurrentUser(c)
 	if user == nil {

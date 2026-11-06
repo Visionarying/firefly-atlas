@@ -100,7 +100,7 @@
 <div class="wrap">
 <h1 id="firefly-atlas">Firefly Atlas 版本规划与功能取舍方案</h1>
 <blockquote>
-<p>适用起点：v1.1.2「Tempo」之后
+<p>适用起点：v1.2.0「Lumen」之后
 编写日期：2026-11-06
 仓库地址：https://github.com/Visionarying/firefly-atlas</p>
 </blockquote>
@@ -136,10 +136,10 @@
 <td>已发布</td>
 </tr>
 <tr>
-<td>v1.2</td>
+<td>v1.2.0</td>
 <td>Lumen</td>
 <td>多页面与分栏、缩略图与压缩、书签增量导入、三项小改进</td>
-<td>待开发</td>
+<td>已发布</td>
 </tr>
 <tr>
 <td>v1.3</td>
@@ -293,10 +293,10 @@
 <li>顶部增加页面标签，例如「主页 / 工作 / 影音」，点击切换</li>
 <li>每个页面独立拥有自己的分组和卡片</li>
 <li>每页可选 1 / 2 / 3 列排布，分组按列摆放（原先是一列往下堆）</li>
-<li>页面本身支持增删改和拖拽排序</li>
+<li>页面本身支持新增、重命名、上移 / 下移排序与删除</li>
 <li>手机上自动塌成单列</li>
-<li><strong>v1.2 先不做跨页拖拽卡片</strong>，使用右键菜单「移动到页面」；跨页拖拽放后续版本</li>
-<li>分栏先采用“按卡片数量自动均衡分配到最短列”，暂不做手动把分组拖到某一列</li>
+<li><strong>v1.2 先不做跨页拖拽卡片</strong>，使用右键菜单「移动到分组」；跨页拖拽放后续版本</li>
+<li>分栏按 CSS Grid 顺序摆放分组，不强制均衡列高</li>
 </ul>
 <p><strong>数据模型</strong>：</p>
 <pre><code>新增表 item_icon_pages
@@ -310,7 +310,7 @@
 <li>启动时检查：是否存在 <code>page_id = 0</code> 的分组</li>
 <li>若存在，创建一个名为「我的主页」的默认页，把所有旧分组归属过去</li>
 <li><strong>迁移前自动复制一份 <code>database.db.bak-&lt;时间戳&gt;</code></strong>，失败可人工回退</li>
-<li>迁移只执行一次，用系统设置项打 schema 版本标记，避免重复迁移</li>
+<li>迁移逻辑幂等：只处理 <code>page_id = 0</code> 的旧分组</li>
 <li>迁移脚本必须幂等，并用 v1.1 真实数据库副本跑一遍验证</li>
 </ol>
 <p><strong>备份兼容规则</strong>：</p>

@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/html"
 
+	"firefly-atlas/database"
 	"firefly-atlas/global"
 	"firefly-atlas/models"
 )
@@ -172,6 +173,20 @@ func ImportBookmarks(c *gin.Context) {
 	}
 	groupId := uint(0)
 	_, _ = fmt.Sscanf(c.PostForm("groupId"), "%d", &groupId)
+	pageId := uint(0)
+	_, _ = fmt.Sscanf(c.PostForm("pageId"), "%d", &pageId)
+	reuseGroups := c.PostForm("reuseGroups") == "1"
+	updateExisting := c.PostForm("updateExisting") == "1"
+
+	page := database.EnsureDefaultPage(user.ID)
+	if pageId > 0 {
+		var target models.ItemIconPage
+		if err := global.DB.Where("id = ? AND user_id = ?", pageId, user.ID).First(&target).Error; err != nil {
+			Fail(c, "目标页面不存在")
+			return
+		}
+		page = target
+	}
 
 	// Existing URLs are used for cheap duplicate avoidance.
 	tx := global.DB.Begin()
@@ -186,15 +201,29 @@ func ImportBookmarks(c *gin.Context) {
 		}
 	}()
 
-	var existing []string
-	tx.Model(&models.ItemIcon{}).Where("user_id = ?", user.ID).Pluck("url", &existing)
-	existingSet := map[string]bool{}
-	for _, u := range existing {
-		existingSet[strings.ToLower(strings.TrimSpace(u))] = true
+	var existingItems []models.ItemIcon
+	tx.Where("user_id = ?", user.ID).Find(&existingItems)
+	existingSet := map[string]models.ItemIcon{}
+	for _, item := range existingItems {
+		existingSet[strings.ToLower(strings.TrimSpace(item.Url))] = item
+	}
+
+	// Groups already on the target page can be reused when the user re-imports
+	// an updated bookmark export instead of creating duplicate folder sections.
+	pageGroups := map[string]uint{}
+	if reuseGroups || groupId == 0 {
+		var groups []models.ItemIconGroup
+		tx.Where("user_id = ? AND page_id = ?", user.ID, page.ID).Find(&groups)
+		for _, group := range groups {
+			key := strings.ToLower(strings.TrimSpace(group.Title))
+			if _, exists := pageGroups[key]; !exists {
+				pageGroups[key] = group.ID
+			}
+		}
 	}
 
 	var maxGroupSort int
-	tx.Model(&models.ItemIconGroup{}).Where("user_id = ?", user.ID).
+	tx.Model(&models.ItemIconGroup{}).Where("user_id = ? AND page_id = ?", user.ID, page.ID).
 		Select("COALESCE(MAX(sort), -1)").Scan(&maxGroupSort)
 
 	groups := map[string][]bookmark{}
@@ -214,7 +243,9 @@ func ImportBookmarks(c *gin.Context) {
 	}
 
 	createdGroups := 0
+	reusedGroups := 0
 	createdItems := 0
+	updatedItems := 0
 	skipped := 0
 	for name, list := range groups {
 		if createdGroups >= 200 {
@@ -226,14 +257,23 @@ func ImportBookmarks(c *gin.Context) {
 				Fail(c, "目标分组不存在")
 				return
 			}
-		} else {
+		} else if reuseGroups {
+			key := strings.ToLower(strings.TrimSpace(name))
+			if id, ok := pageGroups[key]; ok {
+				if err := tx.Where("id = ? AND user_id = ?", id, user.ID).First(&group).Error; err == nil {
+					reusedGroups++
+				}
+			}
+		}
+		if group.ID == 0 {
 			maxGroupSort++
-			group = models.ItemIconGroup{UserID: user.ID, Title: name, Sort: maxGroupSort}
+			group = models.ItemIconGroup{UserID: user.ID, PageID: page.ID, Title: name, Sort: maxGroupSort}
 			if err := tx.Create(&group).Error; err != nil {
 				Fail(c, "创建分组失败")
 				return
 			}
 			createdGroups++
+			pageGroups[strings.ToLower(strings.TrimSpace(name))] = group.ID
 		}
 
 		var maxSort int
@@ -244,7 +284,15 @@ func ImportBookmarks(c *gin.Context) {
 			if createdItems >= 2000 {
 				break
 			}
-			if existingSet[strings.ToLower(b.URL)] {
+			key := strings.ToLower(b.URL)
+			if item, exists := existingSet[key]; exists {
+				if updateExisting && item.Title != b.Title && strings.TrimSpace(b.Title) != "" {
+					if err := tx.Model(&models.ItemIcon{}).Where("id = ? AND user_id = ?", item.ID, user.ID).
+						Update("title", b.Title).Error; err == nil {
+						updatedItems++
+						continue
+					}
+				}
 				skipped++
 				continue
 			}
@@ -263,7 +311,7 @@ func ImportBookmarks(c *gin.Context) {
 				Fail(c, "写入书签卡片失败: "+err.Error())
 				return
 			}
-			existingSet[strings.ToLower(b.URL)] = true
+			existingSet[key] = item
 			createdItems++
 		}
 	}
@@ -273,7 +321,7 @@ func ImportBookmarks(c *gin.Context) {
 	}
 	committed = true
 	OK(c, gin.H{
-		"groups": createdGroups, "items": createdItems,
-		"skipped": skipped, "total": len(bookmarks),
+		"groups": createdGroups, "reusedGroups": reusedGroups, "items": createdItems,
+		"updated": updatedItems, "skipped": skipped, "total": len(bookmarks), "pageId": page.ID,
 	})
 }

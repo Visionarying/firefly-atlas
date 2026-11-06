@@ -77,6 +77,7 @@ func Init() *gin.Engine {
 			auth.POST("/panel/config/save", api.SaveUserConfig)
 
 			auth.POST("/panel/itemIcon/save", api.SaveItemIcon)
+			auth.POST("/panel/itemIcon/move", api.MoveItemIcon)
 			auth.DELETE("/panel/itemIcon/:id", api.DeleteItemIcon)
 			auth.POST("/panel/itemIcon/sort", api.SortItemIcons)
 
@@ -95,6 +96,7 @@ func Init() *gin.Engine {
 
 			auth.GET("/system/file/list", api.ListFiles)
 			auth.POST("/system/file/upload", api.UploadFile)
+			auth.POST("/system/file/compress", api.CompressFiles)
 			auth.DELETE("/system/file/:id", api.DeleteFile)
 			auth.POST("/system/file/batch-delete", api.BatchDeleteFiles)
 			auth.POST("/system/file/move", api.MoveFiles)

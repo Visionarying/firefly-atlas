@@ -16,11 +16,40 @@ const engineOpen = ref(false)
 const focused = ref(false)
 const activeIndex = ref(-1)
 
-const currentEngine = computed(() => engines.value[engineIndex.value] || engines.value[0])
-const isDirect = computed(() => isUrlLike(keyword.value))
+// Bang prefixes: !g Google, !b Bing, !d DuckDuckGo, !gh GitHub, !yt YouTube.
+// Unknown prefixes are treated as normal text so users can still search for "!foo".
+const prefixAliases: Record<string, string[]> = {
+  g: ['google', '谷歌'],
+  b: ['baidu', '百度'],
+  bi: ['bing', '必应'],
+  d: ['duckduckgo'],
+  gh: ['github'],
+  yt: ['youtube'],
+}
+
+function engineForKey(key: string) {
+  const aliases = prefixAliases[key] || [key]
+  return engines.value.find((engine) => {
+    const haystack = `${engine.name} ${engine.url}`.toLowerCase()
+    return aliases.some((alias) => haystack.includes(alias))
+  })
+}
+
+const prefix = computed(() => {
+  const match = keyword.value.match(/^\s*!([a-zA-Z]{1,6})\s+([\s\S]+)$/)
+  if (!match) return null
+  const engine = engineForKey(match[1].toLowerCase())
+  if (!engine) return null
+  return { engine, query: match[2].trim() }
+})
+
+const effectiveKeyword = computed(() => prefix.value?.query || keyword.value)
+
+const currentEngine = computed(() => prefix.value?.engine || engines.value[engineIndex.value] || engines.value[0])
+const isDirect = computed(() => isUrlLike(effectiveKeyword.value))
 
 const matches = computed(() => {
-  const query = keyword.value.trim().toLowerCase()
+  const query = effectiveKeyword.value.trim().toLowerCase()
   if (!query) return []
   return panel.items
     .filter((item) =>
@@ -65,7 +94,7 @@ function pickEngine(index: number) {
 }
 
 function submit() {
-  const value = keyword.value.trim()
+  const value = effectiveKeyword.value.trim()
   if (!value) return
   if (isUrlLike(value)) {
     openExternal(normalizeUrl(value), config.searchOpenInNewTab)
@@ -140,6 +169,7 @@ onUnmounted(() => window.removeEventListener('keydown', onGlobalKey))
     />
 
     <div v-if="keyword" class="hint">
+      <span v-if="prefix" class="hint-prefix">!{{ prefix.engine.name }}</span>
       <span v-if="isDirect" class="hint-text">直接打开</span>
       <CornerDownLeft :size="13" class="hint-enter" />
     </div>
@@ -317,6 +347,15 @@ onUnmounted(() => window.removeEventListener('keydown', onGlobalKey))
 }
 .hint-text {
   letter-spacing: 0.04em;
+}
+.hint-prefix {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-strong, #059669);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .match-menu {

@@ -41,6 +41,7 @@ func BatchDeleteFiles(c *gin.Context) {
 			_ = os.Remove(local)
 		}
 		removeThumb(f)
+		removeOriginal(f.Src)
 	}
 	if len(files) > 0 {
 		ids := make([]uint, 0, len(files))

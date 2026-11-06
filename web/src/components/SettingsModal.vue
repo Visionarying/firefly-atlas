@@ -26,6 +26,7 @@ import {
   Link2,
   LogOut,
   Megaphone,
+  Minimize2,
   MonitorCog,
   MoveRight,
   Palette,
@@ -43,10 +44,11 @@ import {
 } from 'lucide-vue-next'
 import RoundCardModal from './RoundCardModal.vue'
 import PromptModal from './PromptModal.vue'
-import { authApi, backupApi, cloudApi, fileApi, panelApi, settingApi, siteBackupApi, userApi } from '@/api'
+import { authApi, backupApi, cloudApi, fileApi, panelApi, settingApi, siteBackupApi, systemApi, userApi } from '@/api'
 import { useAuthStore } from '@/store/auth'
 import { usePanelStore } from '@/store/panel'
 import { fontOptions } from '@/store/defaults'
+import { checkForUpdate, type UpdateCheck } from '@/utils/update'
 import type {
   AuditFile,
   CloudBackup,
@@ -154,6 +156,22 @@ async function addPage() {
     message.success('页面已创建')
   } catch (e: any) {
     message.error(e.message || '创建页面失败')
+  }
+}
+
+async function movePage(id: number, delta: number) {
+  const list = panel.pages.slice().sort((a, b) => a.sort - b.sort || a.id - b.id)
+  const index = list.findIndex((page) => page.id === id)
+  const target = index + delta
+  if (index < 0 || target < 0 || target >= list.length) return
+  const [page] = list.splice(index, 1)
+  list.splice(target, 0, page)
+  list.forEach((entry, order) => (entry.sort = order))
+  panel.pages = list
+  try {
+    await panelApi.sortPages(list.map((entry) => entry.id))
+  } catch {
+    /* order is optimistic */
   }
 }
 
@@ -401,6 +419,32 @@ async function moveSelected(target: 1 | 2) {
   }
 }
 
+const compressing = ref(false)
+
+function compressSelected() {
+  const ids = [...selectedFileIds.value]
+  if (ids.length === 0 || compressing.value) return
+  dialog.warning({
+    title: '压缩选中图片',
+    content: 'JPEG 按质量 82 重新编码，PNG 无损重写；原图会保留在 uploads\\originals\\ 中，确认后开始。',
+    positiveText: '开始压缩',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      compressing.value = true
+      try {
+        const result = await fileApi.compress(ids)
+        message.success(result.message || `已压缩 ${result.compressed} 个文件`)
+        selectedFileIds.value = []
+        await loadFiles()
+      } catch (e: any) {
+        message.error(e.message || '压缩失败')
+      } finally {
+        compressing.value = false
+      }
+    },
+  })
+}
+
 function openRename(file: FileRecord) {
   renameTarget.value = file
   renameValue.value = file.fileName
@@ -502,6 +546,8 @@ const bookmarkFile = ref<File | null>(null)
 const bookmarkInput = ref<HTMLInputElement | null>(null)
 const bookmarkMode = ref<'folders' | 'single'>('folders')
 const bookmarkGroupId = ref<number>(0)
+const bookmarkReuseGroups = ref(true)
+const bookmarkUpdateExisting = ref(true)
 const bookmarkImporting = ref(false)
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -597,10 +643,15 @@ async function importBookmarks() {
     form.append('file', bookmarkFile.value)
     form.append('mode', bookmarkMode.value)
     form.append('groupId', String(bookmarkGroupId.value))
+    form.append('pageId', String(panel.currentPageId))
+    form.append('reuseGroups', bookmarkReuseGroups.value ? '1' : '0')
+    form.append('updateExisting', bookmarkUpdateExisting.value ? '1' : '0')
     const result = await panelApi.importBookmarks(form)
-    message.success(
-      `导入完成：新增 ${result.groups} 个分组、${result.items} 张卡片${result.skipped ? `，跳过 ${result.skipped} 个重复项` : ''}`,
-    )
+    const parts = [`新增 ${result.groups} 个分组、${result.items} 张卡片`]
+    if (result.reusedGroups) parts.push(`复用 ${result.reusedGroups} 个已有分组`)
+    if (result.updated) parts.push(`更新 ${result.updated} 个标题`)
+    if (result.skipped) parts.push(`跳过 ${result.skipped} 个重复项`)
+    message.success(`导入完成：${parts.join('，')}`)
     bookmarkFile.value = null
     await panel.load()
   } catch (e: any) {
@@ -726,6 +777,7 @@ watch(
     if (active.value === 'account') void loadUsers()
     if (active.value === 'cloud') void refreshCloud()
     if (active.value === 'groups') ensureActivePage()
+    if (active.value === 'about') void loadVersion()
   },
 )
 
@@ -734,6 +786,7 @@ watch(active, (value) => {
   if (value === 'account') void loadUsers()
   if (value === 'cloud') void refreshCloud()
   if (value === 'groups') ensureActivePage()
+  if (value === 'about') void loadVersion()
 })
 
 watch(
@@ -1270,7 +1323,35 @@ async function logout() {
   router.push('/login')
 }
 
-const version = '1.1.2'
+const version = ref('1.2.0')
+const updateChecking = ref(false)
+const updateState = ref<UpdateCheck | null>(null)
+const updateError = ref('')
+
+async function loadVersion() {
+  try {
+    const info = await systemApi.version()
+    if (info?.version) version.value = info.version
+  } catch {
+    /* keep the bundled fallback */
+  }
+}
+
+async function checkUpdates() {
+  updateChecking.value = true
+  updateError.value = ''
+  try {
+    const result = await checkForUpdate(version.value)
+    if (!result) {
+      updateError.value = '暂时无法连接 GitHub，请稍后再试'
+      return
+    }
+    updateState.value = result
+    if (!result.hasUpdate) message.success('当前已是最新版本')
+  } finally {
+    updateChecking.value = false
+  }
+}
 </script>
 
 <template>
@@ -1602,9 +1683,29 @@ const version = '1.1.2'
             <h3>页面</h3>
             <div class="row">
               <div><div class="row-label">当前页面</div></div>
-              <select v-model.number="activePageId" class="field w-220">
-                <option v-for="page in panel.pages" :key="page.id" :value="page.id">{{ page.title }}</option>
-              </select>
+              <div class="inline-set">
+                <select v-model.number="activePageId" class="field w-220">
+                  <option v-for="page in panel.pages" :key="page.id" :value="page.id">{{ page.title }}</option>
+                </select>
+                <button
+                  class="mini icon"
+                  type="button"
+                  title="页面前移"
+                  :disabled="!activePage || panel.pages[0]?.id === activePageId"
+                  @click="movePage(activePageId, -1)"
+                >
+                  <ArrowUp :size="13" />
+                </button>
+                <button
+                  class="mini icon"
+                  type="button"
+                  title="页面后移"
+                  :disabled="!activePage || panel.pages[panel.pages.length - 1]?.id === activePageId"
+                  @click="movePage(activePageId, 1)"
+                >
+                  <ArrowDown :size="13" />
+                </button>
+              </div>
             </div>
             <template v-if="activePage">
               <div class="row">
@@ -1683,7 +1784,7 @@ const version = '1.1.2'
         <section v-else-if="active === 'library'" class="pane">
           <header class="pane-head">
             <h2>图库管理</h2>
-            <p>壁纸与应用图标保存在本地数据目录，支持分类移动、重命名、批量删除与云端同步。</p>
+            <p>壁纸与应用图标保存在本地数据目录，支持分类移动、重命名、批量压缩、批量删除与云端同步；列表优先加载缩略图。</p>
           </header>
 
           <div class="library-bar">
@@ -1713,6 +1814,9 @@ const version = '1.1.2'
             <button class="mini" type="button" @click="moveSelected(libraryType === 1 ? 2 : 1)">
               <MoveRight :size="13" /> 移到{{ libraryType === 1 ? '应用图标' : '壁纸图库' }}
             </button>
+            <button class="mini" type="button" :disabled="compressing" @click="compressSelected">
+              <Minimize2 :size="13" /> {{ compressing ? '压缩中…' : '压缩' }}
+            </button>
             <button class="mini" type="button" @click="pushSelectedToCloud">
               <CloudUpload :size="13" /> {{ isAdmin ? '推送到云端' : '申请同步' }}
             </button>
@@ -1735,7 +1839,7 @@ const version = '1.1.2'
                 <Square v-else :size="15" />
               </button>
               <a class="thumb" :href="file.src" target="_blank" rel="noopener noreferrer" :title="file.fileName">
-                <img :src="file.src" :alt="file.fileName" loading="lazy" />
+                <img :src="file.thumb || file.src" :alt="file.fileName" loading="lazy" />
               </a>
               <div class="file-meta">
                 <button class="file-name" type="button" :title="`${file.fileName}（点击重命名）`" @click="openRename(file)">
@@ -1844,7 +1948,7 @@ const version = '1.1.2'
           <div class="block">
             <h3><Link2 :size="13" class="inline-ico" /> 导入浏览器书签</h3>
             <p class="block-desc">
-              支持 Chrome / Edge / Firefox 导出的“书签 HTML”。按文件夹分组或全部放入一个分组，自动跳过重复网址。
+              支持 Chrome / Edge / Firefox 导出的“书签 HTML”。按文件夹分组或全部放入一个分组，自动跳过重复网址；再次导入时可复用同名分组并更新已有标题。
             </p>
             <div class="inline-set">
               <button class="btn" type="button" @click="bookmarkInput?.click()">
@@ -1866,6 +1970,14 @@ const version = '1.1.2'
                 <option :value="0">自动创建新分组</option>
                 <option v-for="group in panel.groups" :key="group.id" :value="group.id">{{ group.title }}</option>
               </select>
+            </div>
+            <div class="row">
+              <div><div class="row-label">复用同名分组</div><div class="row-hint">重复导入时不再创建同名分组</div></div>
+              <n-switch v-model:value="bookmarkReuseGroups" size="small" />
+            </div>
+            <div class="row">
+              <div><div class="row-label">更新已有书签标题</div><div class="row-hint">网址已存在时，用新标题覆盖旧标题</div></div>
+              <n-switch v-model:value="bookmarkUpdateExisting" size="small" />
             </div>
             <div class="block-foot">
               <button class="btn primary" type="button" :disabled="bookmarkImporting" @click="importBookmarks">
@@ -2189,7 +2301,7 @@ const version = '1.1.2'
                     <Square v-else :size="15" />
                   </button>
                   <a class="cloud-thumb" :href="file.src" target="_blank" rel="noopener noreferrer">
-                    <img :src="file.src" :alt="file.fileName" loading="lazy" />
+                    <img :src="file.thumb || file.src" :alt="file.fileName" loading="lazy" />
                   </a>
                   <div class="cloud-meta">
                     <span :title="file.fileName">{{ file.fileName }}</span>
@@ -2350,20 +2462,38 @@ const version = '1.1.2'
             <div class="about-logo">F</div>
             <div>
               <strong>Firefly Atlas</strong>
-              <div class="row-hint">Version {{ version }} · V1.1.2「Tempo」</div>
+              <div class="row-hint">Version {{ version }} · V1.2「Lumen」</div>
             </div>
           </div>
 
           <div class="block">
-            <h3>V1.1.0「Aurora」新增</h3>
+            <h3>版本更新</h3>
+            <p class="block-desc">从 GitHub Releases 检查最新版本；网络不可达时不会影响面板使用。</p>
+            <div class="inline-set">
+              <button class="btn" type="button" :disabled="updateChecking" @click="checkUpdates">
+                <RefreshCw :size="14" /> {{ updateChecking ? '检查中…' : '检查更新' }}
+              </button>
+              <template v-if="updateState">
+                <span v-if="updateState.hasUpdate" class="update-badge new">
+                  新版本 v{{ updateState.latest }}
+                </span>
+                <span v-else class="update-badge">已是最新</span>
+                <a v-if="updateState.hasUpdate" :href="updateState.url" target="_blank" rel="noopener noreferrer">
+                  查看发布页
+                </a>
+              </template>
+              <span v-else-if="updateError" class="update-error">{{ updateError }}</span>
+            </div>
+          </div>
+
+          <div class="block">
+            <h3>V1.2.0「Lumen」新增</h3>
             <div class="roadmap">
-              <div class="roadmap-item"><Check :size="14" /><span>页内 iframe 弹窗、右键菜单与卡片在线状态探测</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>系统状态卡片：CPU、内存、磁盘、网络与运行时间</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>图库分类、批量移动 / 删除、重命名与管理员图库选择器</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>GitHub / R2 云存储、双写、图库漫游与同步审批</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>整站 ZIP 备份、AES-256-GCM 加密与云端备份还原</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>浏览器书签导入、PWA 安装与离线壳</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>自定义 CSS / JavaScript、公告与登录失败限流</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>多页面标签与 1 / 2 / 3 列分栏，卡片可跨页移动</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>图库缩略图持久化，JPEG / PNG 批量压缩并保留原图</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>书签增量导入：复用同名分组、更新已存在网址标题</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>数字快捷键、搜索前缀跳转与版本更新提示</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>带图标的原生 GUI 启动器，不再依赖 cmd / VBScript</span></div>
             </div>
           </div>
 
@@ -2393,12 +2523,11 @@ const version = '1.1.2'
           </div>
 
           <div class="block">
-            <h3>v1.2「Lumen」方向</h3>
+            <h3>v1.3「Sentinel」方向</h3>
             <div class="roadmap">
-              <div class="roadmap-item"><Check :size="14" /><span>多页面与 1 / 2 / 3 列分栏，跨页移动先采用菜单方式</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>图库缩略图持久化与 JPEG / PNG 批量压缩</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>书签增量导入：复用同名分组、更新已存在网址</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>数字快捷键、搜索前缀跳转与版本更新提示</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>服务状态历史、24 小时在线率与状态变化告警</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>自定义小组件：安全取数、模板显示与缓存</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>磁盘挂载点多选与可选登录验证码</span></div>
             </div>
           </div>
         </section>
@@ -3278,6 +3407,23 @@ const version = '1.1.2'
 .about-hero strong {
   font-size: 16px;
   color: var(--text-strong);
+}
+.update-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(var(--glass-rgb), 0.5);
+  color: var(--text-soft);
+  font-size: 11px;
+}
+.update-badge.new {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-strong, #059669);
+}
+.update-error {
+  color: var(--text-faint);
+  font-size: 11px;
 }
 
 .roadmap {
