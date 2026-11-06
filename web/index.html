@@ -11,13 +11,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Firefly Atlas</title>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css"
-      media="print"
-      onload="this.media='all'"
-    />
+    <!-- Keep the first paint independent of third-party font CDNs. The UI falls
+         back to system fonts if LXGW WenKai is not installed locally. -->
   </head>
   <body>
     <div id="app"></div>

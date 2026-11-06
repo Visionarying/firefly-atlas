@@ -1178,7 +1178,7 @@ async function logout() {
   router.push('/login')
 }
 
-const version = '1.1.1'
+const version = '1.1.2'
 </script>
 
 <template>
@@ -2214,7 +2214,7 @@ const version = '1.1.1'
             <div class="about-logo">F</div>
             <div>
               <strong>Firefly Atlas</strong>
-              <div class="row-hint">Version {{ version }} · V1.1.1「Hygiene」</div>
+              <div class="row-hint">Version {{ version }} · V1.1.2「Tempo」</div>
             </div>
           </div>
 

@@ -1,12 +1,12 @@
-# Firefly Atlas v1.1.1「Hygiene」
+# Firefly Atlas v1.1.2「Tempo」
 
 一个面向私有云 / NAS / 家庭工作站的轻量导航面板。V1.1 在“开箱即用”的基础上补齐了页内弹窗、右键菜单、系统状态、在线图标、图库管理、云存储漫游、整站加密备份、服务健康探测与浏览器书签导入等实用能力，所有数据仍保存在本地 SQLite 中。
 
-`v1.1.1` 是合规与发布整理补丁：项目正式更名为 **Firefly Atlas**，补充 MIT License，修正关于页/README 致谢，并同步 GitHub Actions、GHCR 与 Docker 版本注入。
+`v1.1.2` 是启动与首屏性能补丁：移除会阻塞页面加载的第三方字体 CDN，新增 Windows 启动脚本，自动检测端口并打开浏览器；同时保留 v1.1.1 的更名、MIT License 与致谢修正。
 
 > 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 二次开发版（作者 Roland），按 Vue 3 + Go 重新实现，保留原项目署名。
 >
-> 版本命名：`v1.1.1` 代号 **Hygiene（整理）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
+> 版本命名：`v1.1.2` 代号 **Tempo（节拍）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
 
 ## 功能
 
@@ -148,23 +148,23 @@ docker compose up -d --build
 只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
 
 ```bash
-docker pull ghcr.io/visionarying/firefly-atlas:1.1.1
+docker pull ghcr.io/visionarying/firefly-atlas:1.1.2
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  ghcr.io/visionarying/firefly-atlas:1.1.1
+  ghcr.io/visionarying/firefly-atlas:1.1.2
 ```
 
 也可以本地构建：
 
 ```bash
-docker build -t firefly-atlas:1.1.1 .
+docker build -t firefly-atlas:1.1.2 .
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  firefly-atlas:1.1.1
+  firefly-atlas:1.1.2
 ```
 
 ### 多架构镜像
@@ -371,6 +371,7 @@ firefly-atlas/
 - `v1.0.0`：首个可用版本
 - `v1.1.0` **Aurora**：页内弹窗、右键菜单、系统状态、图库管理、云存储、加密备份、健康探测、书签导入、PWA
 - `v1.1.1` **Hygiene**：项目更名 Firefly Atlas、补 MIT LICENSE、修正关于页/README 致谢、同步 GHCR 与 CI、Docker 版本注入、反向代理与 CORS 安全文档
+- `v1.1.2` **Tempo**：移除第三方字体 CDN 阻塞、新增 Windows 一键启动脚本、自动打开浏览器、修复双击 exe 的端口/数据目录问题
 - 后续每个发布版本使用独立版本号与代号（例如 `v1.2.0 Lumen`），不再重复使用同一版本号。
 
 ### 后续方向
@@ -393,6 +394,6 @@ firefly-atlas/
 - [Vue](https://vuejs.org/)、[Vite](https://vite.dev/)、[Naive UI](https://www.naiveui.com/)、[Tailwind CSS](https://tailwindcss.com/)
 - [Gin](https://gin-gonic.com/)、[GORM](https://gorm.io/)、[glebarez/sqlite](https://github.com/glebarez/sqlite)
 - [MinIO Go SDK](https://github.com/minio/minio-go)：S3 / R2 兼容客户端
-- [lucide](https://lucide.dev/) 图标，[霞鹜文楷](https://github.com/lxgw/LxgwWenKai) 字体
+- [lucide](https://lucide.dev/) 图标，[霞鹜文楷](https://github.com/lxgw/LxgwWenKai) 字体（优先使用本机安装版本，未安装时回退系统字体）
 
 原 sun-panel 项目采用 MIT 许可，本项目保留其版权与署名。Firefly Atlas 的代码为独立实现，未复用上述项目的业务代码。

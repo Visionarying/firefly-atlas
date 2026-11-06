@@ -1,6 +1,6 @@
 # Firefly Atlas 版本规划与功能取舍方案
 
-> 适用起点：v1.1.1「Hygiene」之后
+> 适用起点：v1.1.2「Tempo」之后
 > 编写日期：2026-11-06
 > 仓库地址：https://github.com/Visionarying/firefly-atlas
 
@@ -12,6 +12,7 @@
 | --- | --- | --- | --- |
 | v1.1.0 | Aurora | 登录与多用户、分组卡片、图库、云存储、加密备份、PWA、在线探测 | 已发布 |
 | v1.1.1 | Hygiene | 更名 Firefly Atlas、MIT License、致谢修正、CI/GHCR/Docker 发布整理 | 已发布 |
+| v1.1.2 | Tempo | 移除字体 CDN 阻塞、Windows 启动脚本、双击 exe 修复 | 已发布 |
 | v1.2 | Lumen | 多页面与分栏、缩略图与压缩、书签增量导入、三项小改进 | 待开发 |
 | v1.3 | Sentinel | 服务状态历史与告警、自定义小组件、监控增强 | 规划中 |
 | v1.4 | Bilingual | 中英双语 | 规划中 |
