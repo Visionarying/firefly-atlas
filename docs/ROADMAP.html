@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firefly Panel 版本规划与功能取舍方案</title>
+<style>
+  :root {
+    --fg: #1f2328;
+    --fg-muted: #59636e;
+    --border: #d1d9e0;
+    --bg-soft: #f6f8fa;
+    --accent: #0f6e56;
+    --accent-soft: #e8f5f0;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    padding: 48px 24px 96px;
+    background: #ffffff;
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 30px; font-weight: 600; line-height: 1.3; margin: 0 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 21px; font-weight: 600; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+  h3 { font-size: 17px; font-weight: 600; margin: 28px 0 10px; }
+  p { margin: 12px 0; }
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-soft); }
+  a:hover { border-bottom-color: var(--accent); }
+  blockquote {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: var(--bg-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    color: var(--fg-muted);
+  }
+  blockquote p { margin: 4px 0; }
+  .toc {
+    margin: 24px 0 8px;
+    padding: 16px 20px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    align-items: baseline;
+  }
+  .toc-title { font-size: 13px; font-weight: 600; color: var(--fg-muted); margin-right: 4px; }
+  .toc a { font-size: 13.5px; border-bottom: none; }
+  .toc a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--bg-soft); font-weight: 600; }
+  tr:nth-child(even) td { background: #fcfcfd; }
+  code {
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 13px;
+    background: var(--bg-soft);
+    padding: 2px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; font-size: 13px; }
+  ul, ol { padding-left: 24px; margin: 12px 0; }
+  li { margin: 5px 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  strong { font-weight: 600; }
+  em { color: var(--fg-muted); }
+  @media (max-width: 640px) {
+    body { padding: 28px 16px 64px; font-size: 14px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 19px; }
+    table { font-size: 13px; }
+    th, td { padding: 7px 9px; }
+    .toc { gap: 4px 12px; }
+  }
+  @media print {
+    body { padding: 0; }
+    .toc { display: none; }
+    h2 { page-break-after: avoid; }
+    table, pre { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1 id="firefly-panel">Firefly Panel 版本规划与功能取舍方案</h1>
+<blockquote>
+<p>适用起点：v1.1.0「Aurora」之后
+编写日期：2026-11-06
+仓库地址：https://github.com/Visionarying/firefly-panel</p>
+</blockquote>
+<hr />
+<nav class="toc"><span class="toc-title">目录</span><a href="#_1">一页速览</a><a href="#_2">一、当前状态</a><a href="#_5">二、参考项目与我们的定位</a><a href="#_8">三、功能取舍的三条原则</a><a href="#v12lumen">四、v1.2「Lumen」</a><a href="#v13sentinel">五、v1.3「Sentinel」</a><a href="#v14bilingual">六、v1.4「Bilingual」</a><a href="#_9">七、明确不做的功能</a><a href="#_10">八、发布前必须处理的合规与品牌问题</a><a href="#_11">九、风险与回滚</a><a href="#_12">附录：术语速查</a></nav>
+<h2 id="_1">一页速览</h2>
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>代号</th>
+<th>核心内容</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v1.1.0</td>
+<td>Aurora</td>
+<td>登录与多用户、分组卡片、图库、云存储、加密备份、PWA、在线探测</td>
+<td>已发布</td>
+</tr>
+<tr>
+<td>v1.2</td>
+<td>Lumen</td>
+<td>多页面与分栏、缩略图与压缩、书签增量导入、四项小改进</td>
+<td>待开发</td>
+</tr>
+<tr>
+<td>v1.3</td>
+<td>Sentinel</td>
+<td>服务状态历史与告警、自定义小组件、监控增强</td>
+<td>规划中</td>
+</tr>
+<tr>
+<td>v1.4</td>
+<td>Bilingual</td>
+<td>中英双语</td>
+<td>规划中</td>
+</tr>
+</tbody>
+</table>
+<p><strong>明确不做</strong>：Docker 容器管理、子路径部署、上百个服务集成、自由画布布局、RSS/天气类组件包。</p>
+<hr />
+<h2 id="_2">一、当前状态</h2>
+<h3 id="_3">已完成</h3>
+<ul>
+<li>v1.1.0 已发布，提交 <code>661db34</code>，标签 <code>v1.1.0</code></li>
+<li>发布前审核修复 6 处问题（CI 构建、长任务超时、空标题越界、CORS、代理信任、版本注入）</li>
+<li>GitHub Actions 双流水线通过：<code>CI</code> 与 <code>Build and publish Docker image</code></li>
+<li>镜像已发到 GHCR，<code>linux/amd64</code> 与 <code>linux/arm64</code> 双架构，体积约 39.3 MB</li>
+<li>任意机器可直接拉取，无需本地安装 Go 或 Node：</li>
+</ul>
+<pre><code class="language-bash">docker pull ghcr.io/visionarying/firefly-panel:main
+</code></pre>
+<h3 id="_4">已知遗留</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>情况</th>
+<th>处理计划</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GHCR 缺少 <code>1.1.0</code> 标签</td>
+<td>只有 <code>main</code>、<code>sha-</code> 前缀标签</td>
+<td>下次发布时自然补齐，或手动重推标签</td>
+</tr>
+<tr>
+<td>无 LICENSE 文件</td>
+<td>公开发布必须有，否则默认保留所有权利</td>
+<td><strong>发布前必须补</strong>，建议 MIT</td>
+</tr>
+<tr>
+<td>关于页文案与事实不符</td>
+<td>现写着"维护者：Roland"</td>
+<td><strong>发布前必须改</strong>，详见第八节</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_5">二、参考项目与我们的定位</h2>
+<h3 id="_6">参考过的项目</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>与本项目的关系</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hslr-s/sun-panel</code></td>
+<td>原始项目，界面与功能思路的来源；官方已闭源，开源停在 v1.3.0</td>
+</tr>
+<tr>
+<td><code>mysecret2022/firefly-panel</code></td>
+<td>参考项目，sun-panel 的二次开发版（作者 Roland）</td>
+</tr>
+<tr>
+<td><code>glanceapp/glance</code></td>
+<td>信息流路线，单二进制 20 MB，widget 生态</td>
+</tr>
+<tr>
+<td><code>Lissy93/dashy</code></td>
+<td>状态检测与主题定制路线</td>
+</tr>
+<tr>
+<td><code>homarr-labs/homarr</code></td>
+<td>纯图形化配置、集成生态路线</td>
+</tr>
+<tr>
+<td><code>gethomepage/homepage</code></td>
+<td>YAML 配置 + 服务集成路线</td>
+</tr>
+<tr>
+<td><code>Garry-QD/FlatNas</code></td>
+<td>同技术栈（Vue3 + Go/Gin）的国产导航页</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">我们的定位差异</h3>
+<p>本项目为<strong>独立实现</strong>，未复用上述项目的业务代码。功能与界面的思路有参考，代码从零编写，技术选型主动做了不同取舍：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>sun-panel 及其二次开发版</th>
+<th>本项目</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQLite 驱动</td>
+<td>CGO（必须装 gcc 才能编译）</td>
+<td>纯 Go，<code>CGO_ENABLED=0</code> 直接交叉编译</td>
+</tr>
+<tr>
+<td>前端嵌入</td>
+<td>go-bindata 生成中间文件</td>
+<td>原生 <code>go:embed</code></td>
+</tr>
+<tr>
+<td>配置方式</td>
+<td><code>config/*.yml</code> 配置文件</td>
+<td>环境变量，无配置文件</td>
+</tr>
+<tr>
+<td>外部依赖</td>
+<td>可选 Redis、队列、缓存双实现</td>
+<td>全部进程内，零外部服务</td>
+</tr>
+<tr>
+<td>初始密码</td>
+<td>固定弱密码</td>
+<td>启动时随机生成，日志打印一次</td>
+</tr>
+</tbody>
+</table>
+<p><strong>结论</strong>：不在功能数量上与对方竞争，保持"轻、少依赖、易部署"的结构性优势。</p>
+<hr />
+<h2 id="_8">三、功能取舍的三条原则</h2>
+<ol>
+<li><strong>只做导航该做的事。</strong> 面板的职责是"把入口摆好、把状态告诉你"，不是替代监控系统、下载器或媒体服务器。</li>
+<li><strong>能用一套通用机制解决，就不写 N 个专用适配。</strong> 与其维护 80 个服务集成，不如提供一个"自定义数据源"能力，让用户自己接。</li>
+<li><strong>安全默认。</strong> 默认设置应该是安全的，方便是可选开启的（例如验证码默认关、Docker 权限默认不申请）。</li>
+</ol>
+<hr />
+<h2 id="v12lumen">四、v1.2「Lumen」</h2>
+<p>目标：让面板<strong>装得下更多内容</strong>，同时补齐图库与导入的短板。</p>
+<h3 id="41">4.1 多页面与分栏（核心功能）</h3>
+<p><strong>解决什么问题</strong>：现在只有一页，卡片超过 50 张后，分组纵向堆叠会越拉越长，找东西变慢。</p>
+<p><strong>做成什么样</strong>：</p>
+<ul>
+<li>顶部增加页面标签，例如「主页 / 工作 / 影音」，点击切换</li>
+<li>每个页面独立拥有自己的分组和卡片</li>
+<li>每页可选 1 / 2 / 3 列排布，分组按列摆放（原先是一列往下堆）</li>
+<li>页面本身支持增删改和拖拽排序</li>
+<li>手机上自动塌成单列</li>
+</ul>
+<p><strong>数据模型</strong>：</p>
+<pre><code>新增表 item_icon_pages
+  id, user_id, title, sort, columns, created_at, updated_at
+
+改造表 item_icon_groups
+  新增字段 page_id（指向所属页面）
+</code></pre>
+<p><strong>迁移策略（关键风险点）</strong>：</p>
+<ol>
+<li>启动时检查：是否存在 <code>page_id = 0</code> 的分组</li>
+<li>若存在，创建一个名为「我的主页」的默认页，把所有旧分组归属过去</li>
+<li><strong>迁移前自动复制一份 <code>database.db.bak</code></strong>，失败可人工回退</li>
+<li>迁移只执行一次，用系统设置项打标记，避免重复迁移</li>
+</ol>
+<p><strong>备份兼容规则</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>导入 v1.1 的 JSON 备份（无 pages 字段）</td>
+<td>全部归入「默认页」，正常显示</td>
+</tr>
+<tr>
+<td>导入 v1.2 的 JSON 备份</td>
+<td>按 pages 还原</td>
+</tr>
+<tr>
+<td>整站 ZIP 备份</td>
+<td>同上，manifest 里增加 pages 段</td>
+</tr>
+</tbody>
+</table>
+<p><strong>验收标准</strong>：</p>
+<ul>
+<li>老数据库升级后，原有分组与卡片数量、顺序完全不变</li>
+<li>v1.1 导出的备份能被 v1.2 正确导入</li>
+<li>三种列数在桌面和手机上都正常</li>
+</ul>
+<h3 id="42">4.2 图库缩略图持久化与压缩</h3>
+<p><strong>解决什么问题</strong>：现在图库列表直接加载原图，一张 3 MB 壁纸会让列表加载很慢，NAS 上尤其明显。</p>
+<p><strong>做什么</strong>：</p>
+<ul>
+<li>上传时自动生成缩略图（长边 320 px），存到 <code>uploads/thumbs/</code></li>
+<li>图库列表只加载缩略图，点开看大图时才加载原图</li>
+<li>支持选中多张后批量压缩（转 WebP，质量 82）</li>
+<li><strong>SVG 与 GIF 跳过处理</strong>，避免破坏矢量与动画</li>
+</ul>
+<p><strong>压缩的安全边界</strong>：压缩会覆盖原文件，属于不可逆操作。方案是先复制一份到 <code>uploads/originals/</code>，UI 上明确提示"原图已保留，可手动删除"。待开发时再定是否要保留。</p>
+<h3 id="43">4.3 书签增量导入</h3>
+<p><strong>解决什么问题</strong>：现在每次导入书签都会新建同名分组，重复导入会产生大量重复分组和重复卡片。</p>
+<p><strong>做什么</strong>：</p>
+<ul>
+<li>同名分组自动复用，不再重复创建</li>
+<li>已存在的网址可选「跳过」或「更新标题」</li>
+<li>导入结果分类显示：新增 N 个 / 更新 N 个 / 跳过 N 个</li>
+</ul>
+<h3 id="44">4.4 四项小改进</h3>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>说明</th>
+<th>参考来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数字快捷键</td>
+<td>按 <code>0</code>–<code>9</code> 直接打开对应位置的卡片</td>
+<td>Dashy</td>
+</tr>
+<tr>
+<td>搜索前缀跳转</td>
+<td>输入 <code>!g 关键词</code> 直接走 Google，<code>!b</code> 走百度</td>
+<td>Dashy</td>
+</tr>
+<tr>
+<td>版本更新提示</td>
+<td>设置页显示"有新版可用"，读取 GitHub Release</td>
+<td>FlatNas</td>
+</tr>
+<tr>
+<td>弹窗双击最大化</td>
+<td>双击标题栏全屏 / 还原，并加毛玻璃背景</td>
+<td>Roland 二次开发版</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="v13sentinel">五、v1.3「Sentinel」</h2>
+<p>目标：从"能用"走向"能看出问题"。</p>
+<h3 id="51">5.1 服务状态历史与告警</h3>
+<ul>
+<li>每 5 分钟采样一次每张卡片的在线状态，写入历史表</li>
+<li>新增「服务状态」页：24 小时在线率、最近延迟、最后检查时间</li>
+<li><strong>状态变化才提醒</strong>（在线→离线提醒一次），避免每 60 秒刷屏</li>
+<li>历史数据保留 7 天后自动清理</li>
+</ul>
+<p>技术要点：新增 <code>health_samples</code> 表；采样由后台 goroutine 驱动；在线率用 SQL 聚合，避免全量读内存。</p>
+<h3 id="52">5.2 自定义小组件（待开发转正）</h3>
+<p><strong>做什么</strong>：新增一种卡片类型「数据卡片」，配置三样东西：</p>
+<ol>
+<li>数据地址（返回 JSON 的 URL，可带请求头）</li>
+<li>取值路径（比如 <code>data.downloads.length</code>）</li>
+<li>显示模板（比如 <code>下载中：{value} 个</code>）</li>
+</ol>
+<p><strong>为什么不做 80 个集成</strong>：每个专用集成都要跟随对方 API 变更维护。一个通用取数能力可以覆盖大部分需求，且不增加维护负担。</p>
+<p><strong>安全边界</strong>：只取数和文本替换，<strong>不执行用户提供的 JavaScript</strong>。</p>
+<h3 id="53">5.3 其它三项</h3>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>磁盘挂载点多选</td>
+<td>系统监控可从"只看数据目录所在盘"改为可选任意磁盘</td>
+</tr>
+<tr>
+<td>关于页与免责声明</td>
+<td>开源项目对外发布的常规配置</td>
+</tr>
+<tr>
+<td>登录验证码（可选开关）</td>
+<td>默认关闭，管理员可开启，用于公网暴露场景</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="v14bilingual">六、v1.4「Bilingual」</h2>
+<ul>
+<li>中英双语，界面文案抽成语言包</li>
+<li>词条结构可参考 Roland 二次开发版的 213 条中英对照，减少翻译决策成本</li>
+<li>语言可切换并记忆，默认跟随浏览器</li>
+</ul>
+<p><strong>为什么单独成一个版本</strong>：i18n 会改动登录页、首页、设置弹窗、卡片编辑、云存储、备份等几乎每个组件，落地面很大。与数据结构改动放在同一版本，出问题时无法判断是哪一类改动引起的。</p>
+<hr />
+<h2 id="_9">七、明确不做的功能</h2>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>不做的理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Docker 容器管理</td>
+<td>需要挂载 <code>/var/run/docker.sock</code>，等于把宿主机 root 权限交给面板；本项目有普通用户角色，风险高于同类单用户面板</td>
+</tr>
+<tr>
+<td>子路径部署（<code>/panel/</code>）</td>
+<td>当前只使用根路径。需要时再改，成本约半天，改动面是 <code>vite base</code> 与 Go 路由前缀</td>
+</tr>
+<tr>
+<td>上百个服务深度集成</td>
+<td>维护成本会压过一切收益，改用「自定义小组件」覆盖</td>
+</tr>
+<tr>
+<td>自由画布（绝对定位拖拉）</td>
+<td>移动端适配会变成长期填坑，现有分组 + 列布局已够用</td>
+</tr>
+<tr>
+<td>RSS / 天气 / 热榜 / 音乐 组件包</td>
+<td>会把"导航面板"变成"信息聚合页"，与定位冲突，包体与维护面都会涨</td>
+</tr>
+<tr>
+<td>邀请码</td>
+<td>参考项目里属于残留代码，无实际用途</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_10">八、发布前必须处理的合规与品牌问题</h2>
+<p>这一节与功能无关，但影响项目能否被正常使用和传播。</p>
+<h3 id="81-license">8.1 缺少 LICENSE 文件（必须补）</h3>
+<p>当前仓库没有 <code>LICENSE</code>。没有许可证的开源项目，在法律上默认"保留所有权利"，别人<strong>不能合法使用、修改或分发</strong>，也不能提交贡献。</p>
+<p>建议采用 <strong>MIT 协议</strong>：与参考项目一致，兼容性最好，商用与二次开发都不受限。</p>
+<h3 id="82">8.2 关于页文案与事实不符（必须改）</h3>
+<p>现在设置弹窗的「开源与致谢」写的是：</p>
+<blockquote>
+<p>本项目基于 hslr-s/sun-panel 的 MIT 许可进行二次开发与架构重构，保留原作者版权与署名。维护者：Roland。</p>
+</blockquote>
+<p>这句话有三个问题：</p>
+<ol>
+<li><strong>"二次开发"不准确</strong>：本项目是独立实现，并未复用代码</li>
+<li><strong>"维护者：Roland"错误</strong>：Roland 是参考项目的作者，不是本项目的维护者，会让使用者误解</li>
+<li><strong>缺失致谢对象</strong>：没有说明参考了界面与思路</li>
+</ol>
+<p>建议改为：</p>
+<blockquote>
+<p>本项目的界面布局与功能思路参考了 <a href="https://github.com/hslr-s/sun-panel">hslr-s/sun-panel</a>（作者：红烧猎人）及其二次开发版（作者：Roland），代码为独立实现。感谢原作者的开源工作。</p>
+</blockquote>
+<h3 id="83-readme">8.3 README 增加致谢段</h3>
+<p>在 README 末尾增加「致谢与参考」小节，说明三个来源：sun-panel、Roland 的二次开发版、以及借鉴过思路的 Glance / Dashy / Homarr / Homepage / FlatNas。</p>
+<hr />
+<h2 id="_11">九、风险与回滚</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>影响</th>
+<th>应对</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据库迁移出错</td>
+<td>分组与卡片丢失</td>
+<td>迁移前自动备份数据库文件；迁移脚本可重复执行</td>
+</tr>
+<tr>
+<td>备份格式不兼容</td>
+<td>老用户导入失败</td>
+<td>导入时按有无 <code>pages</code> 字段分支处理，写兼容测试</td>
+</tr>
+<tr>
+<td>拖拽跨页重构</td>
+<td>排序功能回归</td>
+<td>保留原有组内排序接口，跨页只新增接口，不改旧接口</td>
+</tr>
+<tr>
+<td>v1.2 范围过大</td>
+<td>验收周期长</td>
+<td>功能可逐个验收，任一功能出问题可单独回滚显示入口</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_12">附录：术语速查</h2>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>通俗解释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>迁移（migration）</td>
+<td>程序升级时，把老数据库的结构改成新结构，保证老数据还能用</td>
+</tr>
+<tr>
+<td>幂等</td>
+<td>同一个操作执行一次和执行多次，结果一样；迁移脚本必须幂等</td>
+</tr>
+<tr>
+<td>缩略图</td>
+<td>原图缩小后的预览图，加载快，点开才看原图</td>
+</tr>
+<tr>
+<td>分栏</td>
+<td>页面内容分成 2 或 3 列并排，而不是一列往下排</td>
+</tr>
+<tr>
+<td>i18n</td>
+<td>internationalization 的缩写，指多语言支持</td>
+</tr>
+<tr>
+<td>CGO</td>
+<td>Go 调用 C 代码的能力，开启后编译需要 gcc，交叉编译变复杂</td>
+</tr>
+<tr>
+<td>GHCR</td>
+<td>GitHub 提供的容器镜像仓库</td>
+</tr>
+<tr>
+<td>goroutine</td>
+<td>Go 里轻量的并发任务，可以理解为"后台小线程"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>本方案为讨论稿，功能范围与顺序可按实际使用反馈调整。</em></p>
+</div>
+</body>
+</html>
