@@ -66,13 +66,13 @@ func checkOneHealth(ctx context.Context, raw string) healthResult {
 
 	start := time.Now()
 	req, _ := http.NewRequestWithContext(ctx, http.MethodHead, u.String(), nil)
-	req.Header.Set("User-Agent", "Firefly-Panel-Health/1.0")
+	req.Header.Set("User-Agent", "Firefly-Atlas-Health/1.0")
 	resp, err := healthHTTP.Do(req)
 	if err == nil {
 		if resp.StatusCode == http.StatusMethodNotAllowed || resp.StatusCode == http.StatusNotImplemented {
 			resp.Body.Close()
 			req, _ = http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
-			req.Header.Set("User-Agent", "Firefly-Panel-Health/1.0")
+			req.Header.Set("User-Agent", "Firefly-Atlas-Health/1.0")
 			req.Header.Set("Range", "bytes=0-0")
 			resp, err = healthHTTP.Do(req)
 		}

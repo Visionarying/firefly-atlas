@@ -14,9 +14,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"firefly-panel/database"
-	"firefly-panel/global"
-	"firefly-panel/models"
+	"firefly-atlas/database"
+	"firefly-atlas/global"
+	"firefly-atlas/models"
 )
 
 const maxBackupUncompressed = int64(2 << 30) // 2 GiB
@@ -194,7 +194,7 @@ func ExportSiteBackup(c *gin.Context) {
 		return
 	}
 
-	tmp, err := os.CreateTemp("", "firefly-backup-*.zip")
+	tmp, err := os.CreateTemp("", "firefly-atlas-backup-*.zip")
 	if err != nil {
 		Fail(c, "创建临时文件失败")
 		return
@@ -212,7 +212,7 @@ func ExportSiteBackup(c *gin.Context) {
 		return
 	}
 
-	name := "firefly-panel-backup-" + time.Now().Format("20060102-150405")
+	name := "firefly-atlas-backup-" + time.Now().Format("20060102-150405")
 	if strings.TrimSpace(req.Password) != "" {
 		encPath := tmpPath + ".ffbak"
 		defer os.Remove(encPath)

@@ -1,5 +1,18 @@
 # 更新日志
 
+## v1.1.1「Hygiene」
+
+合规、品牌与发布整理补丁。
+
+- 项目更名为 **Firefly Atlas**，仓库迁移到 `Visionarying/firefly-atlas`
+- 补充 **MIT License**
+- 修正关于页与 README 的致谢：明确代码为独立实现，Roland 为参考项目作者而非本项目维护者
+- 补充 Glance / Dashy / Homarr / Homepage / FlatNas 的参考致谢
+- Docker 构建支持 `VERSION` 构建参数，镜像内版本号与标签一致
+- GitHub Actions 发布工作流支持手动指定版本，并自动传递 `VERSION`
+- 同步本地与远端 `v1.1.0` 标签，补齐 GHCR 版本标签流程
+- 补充 `TRUSTED_PROXIES`、CORS 同源判断与反向代理部署说明
+
 ## v1.1.0「Aurora」
 
 首个公开的 V1.1 版本。相比 V1.0.0，重点补齐了日常使用中缺失的交互、图库与数据安全能力。

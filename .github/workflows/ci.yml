@@ -43,10 +43,10 @@ jobs:
         working-directory: service
         run: |
           mkdir -p router/webdist
-          printf '<!doctype html><title>firefly-panel ci stub</title>\n' > router/webdist/index.html
+          printf '<!doctype html><title>firefly-atlas ci stub</title>\n' > router/webdist/index.html
       - name: Vet
         working-directory: service
         run: go vet ./...
       - name: Build
         working-directory: service
-        run: go build -trimpath -o /tmp/firefly-panel .
+        run: go build -trimpath -o /tmp/firefly-atlas .

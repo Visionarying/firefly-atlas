@@ -113,7 +113,7 @@ TEMPLATE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Firefly Panel 版本规划与功能取舍方案</title>
+<title>Firefly Atlas 版本规划与功能取舍方案</title>
 <style>__CSS__</style>
 </head>
 <body>

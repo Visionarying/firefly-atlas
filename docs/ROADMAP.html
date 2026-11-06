@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Firefly Panel 版本规划与功能取舍方案</title>
+<title>Firefly Atlas 版本规划与功能取舍方案</title>
 <style>
   :root {
     --fg: #1f2328;
@@ -98,14 +98,14 @@
 </head>
 <body>
 <div class="wrap">
-<h1 id="firefly-panel">Firefly Panel 版本规划与功能取舍方案</h1>
+<h1 id="firefly-atlas">Firefly Atlas 版本规划与功能取舍方案</h1>
 <blockquote>
-<p>适用起点：v1.1.0「Aurora」之后
+<p>适用起点：v1.1.1「Hygiene」之后
 编写日期：2026-11-06
-仓库地址：https://github.com/Visionarying/firefly-panel</p>
+仓库地址：https://github.com/Visionarying/firefly-atlas</p>
 </blockquote>
 <hr />
-<nav class="toc"><span class="toc-title">目录</span><a href="#_1">一页速览</a><a href="#_2">一、当前状态</a><a href="#_5">二、参考项目与我们的定位</a><a href="#_8">三、功能取舍的三条原则</a><a href="#v12lumen">四、v1.2「Lumen」</a><a href="#v13sentinel">五、v1.3「Sentinel」</a><a href="#v14bilingual">六、v1.4「Bilingual」</a><a href="#_9">七、明确不做的功能</a><a href="#_10">八、发布前必须处理的合规与品牌问题</a><a href="#_11">九、风险与回滚</a><a href="#_12">附录：术语速查</a></nav>
+<nav class="toc"><span class="toc-title">目录</span><a href="#_1">一页速览</a><a href="#_2">一、当前状态</a><a href="#_5">二、参考项目与我们的定位</a><a href="#_8">三、功能取舍的三条原则</a><a href="#v12lumen">四、v1.2「Lumen」</a><a href="#v13sentinel">五、v1.3「Sentinel」</a><a href="#v14bilingual">六、v1.4「Bilingual」</a><a href="#_9">七、明确不做的功能</a><a href="#v111">八、合规与品牌问题（v1.1.1 已处理）</a><a href="#_10">九、风险与回滚</a><a href="#_11">附录：术语速查</a></nav>
 <h2 id="_1">一页速览</h2>
 <table>
 <thead>
@@ -124,9 +124,15 @@
 <td>已发布</td>
 </tr>
 <tr>
+<td>v1.1.1</td>
+<td>Hygiene</td>
+<td>更名 Firefly Atlas、MIT License、致谢修正、CI/GHCR/Docker 发布整理</td>
+<td>已发布</td>
+</tr>
+<tr>
 <td>v1.2</td>
 <td>Lumen</td>
-<td>多页面与分栏、缩略图与压缩、书签增量导入、四项小改进</td>
+<td>多页面与分栏、缩略图与压缩、书签增量导入、三项小改进</td>
 <td>待开发</td>
 </tr>
 <tr>
@@ -149,12 +155,13 @@
 <h3 id="_3">已完成</h3>
 <ul>
 <li>v1.1.0 已发布，提交 <code>661db34</code>，标签 <code>v1.1.0</code></li>
+<li>v1.1.1 补丁版完成品牌与合规整理：仓库更名为 <code>Visionarying/firefly-atlas</code>，补齐 MIT License，修正关于页与 README 致谢</li>
 <li>发布前审核修复 6 处问题（CI 构建、长任务超时、空标题越界、CORS、代理信任、版本注入）</li>
 <li>GitHub Actions 双流水线通过：<code>CI</code> 与 <code>Build and publish Docker image</code></li>
-<li>镜像已发到 GHCR，<code>linux/amd64</code> 与 <code>linux/arm64</code> 双架构，体积约 39.3 MB</li>
+<li>镜像发布到 GHCR，<code>linux/amd64</code> 与 <code>linux/arm64</code> 双架构，体积约 39.3 MB</li>
 <li>任意机器可直接拉取，无需本地安装 Go 或 Node：</li>
 </ul>
-<pre><code class="language-bash">docker pull ghcr.io/visionarying/firefly-panel:main
+<pre><code class="language-bash">docker pull ghcr.io/visionarying/firefly-atlas:1.1.1
 </code></pre>
 <h3 id="_4">已知遗留</h3>
 <table>
@@ -167,19 +174,19 @@
 </thead>
 <tbody>
 <tr>
-<td>GHCR 缺少 <code>1.1.0</code> 标签</td>
-<td>只有 <code>main</code>、<code>sha-</code> 前缀标签</td>
-<td>下次发布时自然补齐，或手动重推标签</td>
+<td>旧 GHCR 包 <code>firefly-panel</code></td>
+<td>旧仓库镜像仍保留，<code>1.1.0</code> 标签可能缺失</td>
+<td>新包 <code>firefly-atlas</code> 以 v1.1.1 为起点，旧包不再维护</td>
 </tr>
 <tr>
-<td>无 LICENSE 文件</td>
-<td>公开发布必须有，否则默认保留所有权利</td>
-<td><strong>发布前必须补</strong>，建议 MIT</td>
+<td>子路径部署</td>
+<td>当前只支持根路径</td>
+<td>用户已确认暂不做；未来若使用带路径的 Tunnel 再评估</td>
 </tr>
 <tr>
-<td>关于页文案与事实不符</td>
-<td>现写着"维护者：Roland"</td>
-<td><strong>发布前必须改</strong>，详见第八节</td>
+<td>自定义小组件</td>
+<td>已列入 v1.3</td>
+<td>需先设计 SSRF、超时、响应体大小与密钥安全边界</td>
 </tr>
 </tbody>
 </table>
@@ -282,6 +289,8 @@
 <li>每页可选 1 / 2 / 3 列排布，分组按列摆放（原先是一列往下堆）</li>
 <li>页面本身支持增删改和拖拽排序</li>
 <li>手机上自动塌成单列</li>
+<li><strong>v1.2 先不做跨页拖拽卡片</strong>，使用右键菜单「移动到页面」；跨页拖拽放后续版本</li>
+<li>分栏先采用“按卡片数量自动均衡分配到最短列”，暂不做手动把分组拖到某一列</li>
 </ul>
 <p><strong>数据模型</strong>：</p>
 <pre><code>新增表 item_icon_pages
@@ -294,8 +303,9 @@
 <ol>
 <li>启动时检查：是否存在 <code>page_id = 0</code> 的分组</li>
 <li>若存在，创建一个名为「我的主页」的默认页，把所有旧分组归属过去</li>
-<li><strong>迁移前自动复制一份 <code>database.db.bak</code></strong>，失败可人工回退</li>
-<li>迁移只执行一次，用系统设置项打标记，避免重复迁移</li>
+<li><strong>迁移前自动复制一份 <code>database.db.bak-&lt;时间戳&gt;</code></strong>，失败可人工回退</li>
+<li>迁移只执行一次，用系统设置项打 schema 版本标记，避免重复迁移</li>
+<li>迁移脚本必须幂等，并用 v1.1 真实数据库副本跑一遍验证</li>
 </ol>
 <p><strong>备份兼容规则</strong>：</p>
 <table>
@@ -332,10 +342,11 @@
 <ul>
 <li>上传时自动生成缩略图（长边 320 px），存到 <code>uploads/thumbs/</code></li>
 <li>图库列表只加载缩略图，点开看大图时才加载原图</li>
-<li>支持选中多张后批量压缩（转 WebP，质量 82）</li>
+<li>支持选中多张后批量压缩（<strong>JPEG / PNG</strong>，质量约 82；不使用 WebP，保持 <code>CGO_ENABLED=0</code> 与多架构构建）</li>
 <li><strong>SVG 与 GIF 跳过处理</strong>，避免破坏矢量与动画</li>
+<li>缩略图与压缩都要覆盖现有文件、云端同步文件、删除文件与整站备份场景</li>
 </ul>
-<p><strong>压缩的安全边界</strong>：压缩会覆盖原文件，属于不可逆操作。方案是先复制一份到 <code>uploads/originals/</code>，UI 上明确提示"原图已保留，可手动删除"。待开发时再定是否要保留。</p>
+<p><strong>压缩的安全边界</strong>：压缩会覆盖原文件，属于不可逆操作。方案是先复制一份到 <code>uploads/originals/</code>，并<strong>保持原文件路径不变</strong>，避免卡片和壁纸引用失效；UI 上明确提示“原图已保留，可手动删除”。</p>
 <h3 id="43">4.3 书签增量导入</h3>
 <p><strong>解决什么问题</strong>：现在每次导入书签都会新建同名分组，重复导入会产生大量重复分组和重复卡片。</p>
 <p><strong>做什么</strong>：</p>
@@ -344,7 +355,7 @@
 <li>已存在的网址可选「跳过」或「更新标题」</li>
 <li>导入结果分类显示：新增 N 个 / 更新 N 个 / 跳过 N 个</li>
 </ul>
-<h3 id="44">4.4 四项小改进</h3>
+<h3 id="44">4.4 三项小改进</h3>
 <table>
 <thead>
 <tr>
@@ -356,34 +367,35 @@
 <tbody>
 <tr>
 <td>数字快捷键</td>
-<td>按 <code>0</code>–<code>9</code> 直接打开对应位置的卡片</td>
+<td>按 <code>0</code>–<code>9</code> 直接打开当前页对应位置的卡片；输入框聚焦时禁用</td>
 <td>Dashy</td>
 </tr>
 <tr>
 <td>搜索前缀跳转</td>
-<td>输入 <code>!g 关键词</code> 直接走 Google，<code>!b</code> 走百度</td>
+<td>输入 <code>!g 关键词</code> 直接走 Google，<code>!b</code> 走百度，并支持自定义前缀</td>
 <td>Dashy</td>
 </tr>
 <tr>
 <td>版本更新提示</td>
-<td>设置页显示"有新版可用"，读取 GitHub Release</td>
+<td>设置页显示“有新版可用”，读取 GitHub Release；可选开启、短超时、失败静默、缓存 24 小时</td>
 <td>FlatNas</td>
-</tr>
-<tr>
-<td>弹窗双击最大化</td>
-<td>双击标题栏全屏 / 还原，并加毛玻璃背景</td>
-<td>Roland 二次开发版</td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>弹窗双击标题栏最大化 / 还原在 v1.1.0 已实现，不再列为 v1.2 新功能。</p>
+</blockquote>
 <hr />
 <h2 id="v13sentinel">五、v1.3「Sentinel」</h2>
 <p>目标：从"能用"走向"能看出问题"。</p>
 <h3 id="51">5.1 服务状态历史与告警</h3>
 <ul>
 <li>每 5 分钟采样一次每张卡片的在线状态，写入历史表</li>
+<li>新增 <code>health_url</code> 字段：默认留空时同时采样 <code>url</code> 与 <code>lanUrl</code>，也可手动指定探测地址</li>
 <li>新增「服务状态」页：24 小时在线率、最近延迟、最后检查时间</li>
 <li><strong>状态变化才提醒</strong>（在线→离线提醒一次），避免每 60 秒刷屏</li>
+<li>浏览器通知为默认通道；邮件 / Webhook / ntfy 作为可选通道</li>
+<li>支持维护窗口，维护期间不告警</li>
 <li>历史数据保留 7 天后自动清理</li>
 </ul>
 <p>技术要点：新增 <code>health_samples</code> 表；采样由后台 goroutine 驱动；在线率用 SQL 聚合，避免全量读内存。</p>
@@ -395,7 +407,14 @@
 <li>显示模板（比如 <code>下载中：{value} 个</code>）</li>
 </ol>
 <p><strong>为什么不做 80 个集成</strong>：每个专用集成都要跟随对方 API 变更维护。一个通用取数能力可以覆盖大部分需求，且不增加维护负担。</p>
-<p><strong>安全边界</strong>：只取数和文本替换，<strong>不执行用户提供的 JavaScript</strong>。</p>
+<p><strong>安全边界</strong>：</p>
+<ul>
+<li>只取数和文本替换，<strong>不执行用户提供的 JavaScript</strong></li>
+<li>默认仅管理员可用；普通用户开放前需要单独评估</li>
+<li>只允许 GET，限制重定向、超时、响应体大小</li>
+<li>禁止访问云元数据地址；请求头与密钥不进入普通用户响应</li>
+<li>请求结果按 TTL 缓存，失败时保留上一次可用值</li>
+</ul>
 <h3 id="53">5.3 其它三项</h3>
 <table>
 <thead>
@@ -423,8 +442,10 @@
 <h2 id="v14bilingual">六、v1.4「Bilingual」</h2>
 <ul>
 <li>中英双语，界面文案抽成语言包</li>
-<li>词条结构可参考 Roland 二次开发版的 213 条中英对照，减少翻译决策成本</li>
+<li>只做中文 / 英文，不增加其他语言</li>
+<li>词条与术语使用本项目自己的 glossary；Roland 二次开发版的 213 条中英对照仅作为参考，不直接照搬</li>
 <li>语言可切换并记忆，默认跟随浏览器</li>
+<li>日期、时间、数字使用 <code>Intl</code> 格式化；用户自定义标题/描述不翻译</li>
 </ul>
 <p><strong>为什么单独成一个版本</strong>：i18n 会改动登录页、首页、设置弹窗、卡片编辑、云存储、备份等几乎每个组件，落地面很大。与数据结构改动放在同一版本，出问题时无法判断是哪一类改动引起的。</p>
 <hr />
@@ -464,30 +485,19 @@
 </tbody>
 </table>
 <hr />
-<h2 id="_10">八、发布前必须处理的合规与品牌问题</h2>
-<p>这一节与功能无关，但影响项目能否被正常使用和传播。</p>
-<h3 id="81-license">8.1 缺少 LICENSE 文件（必须补）</h3>
-<p>当前仓库没有 <code>LICENSE</code>。没有许可证的开源项目，在法律上默认"保留所有权利"，别人<strong>不能合法使用、修改或分发</strong>，也不能提交贡献。</p>
-<p>建议采用 <strong>MIT 协议</strong>：与参考项目一致，兼容性最好，商用与二次开发都不受限。</p>
-<h3 id="82">8.2 关于页文案与事实不符（必须改）</h3>
-<p>现在设置弹窗的「开源与致谢」写的是：</p>
+<h2 id="v111">八、合规与品牌问题（v1.1.1 已处理）</h2>
+<h3 id="81-license">8.1 LICENSE</h3>
+<p>已补充 <strong>MIT License</strong>（<code>LICENSE</code>，版权 2026 Visionarying）。</p>
+<h3 id="82-readme">8.2 关于页与 README 致谢</h3>
+<p>已改为：</p>
 <blockquote>
-<p>本项目基于 hslr-s/sun-panel 的 MIT 许可进行二次开发与架构重构，保留原作者版权与署名。维护者：Roland。</p>
+<p>本项目的界面布局与功能思路参考了 <a href="https://github.com/hslr-s/sun-panel">hslr-s/sun-panel</a>（作者：红烧猎人）及其二次开发版（作者：Roland），代码为独立实现；同时参考了 Glance、Dashy、Homarr、Homepage 与 FlatNas 的公开思路。感谢原作者与社区的开源工作。</p>
 </blockquote>
-<p>这句话有三个问题：</p>
-<ol>
-<li><strong>"二次开发"不准确</strong>：本项目是独立实现，并未复用代码</li>
-<li><strong>"维护者：Roland"错误</strong>：Roland 是参考项目的作者，不是本项目的维护者，会让使用者误解</li>
-<li><strong>缺失致谢对象</strong>：没有说明参考了界面与思路</li>
-</ol>
-<p>建议改为：</p>
-<blockquote>
-<p>本项目的界面布局与功能思路参考了 <a href="https://github.com/hslr-s/sun-panel">hslr-s/sun-panel</a>（作者：红烧猎人）及其二次开发版（作者：Roland），代码为独立实现。感谢原作者的开源工作。</p>
-</blockquote>
-<h3 id="83-readme">8.3 README 增加致谢段</h3>
-<p>在 README 末尾增加「致谢与参考」小节，说明三个来源：sun-panel、Roland 的二次开发版、以及借鉴过思路的 Glance / Dashy / Homarr / Homepage / FlatNas。</p>
+<p>README 末尾已增加「致谢」小节，覆盖 sun-panel、Roland 的二次开发版，以及借鉴过思路的 Glance / Dashy / Homarr / Homepage / FlatNas。</p>
+<h3 id="83">8.3 项目更名</h3>
+<p>仓库已从 <code>Visionarying/firefly-panel</code> 更名为 <strong><code>Visionarying/firefly-atlas</code></strong>，项目英文名为 <strong>Firefly Atlas</strong>，版本代号继续使用 Aurora / Lumen / Sentinel / Bilingual。</p>
 <hr />
-<h2 id="_11">九、风险与回滚</h2>
+<h2 id="_10">九、风险与回滚</h2>
 <table>
 <thead>
 <tr>
@@ -508,9 +518,9 @@
 <td>导入时按有无 <code>pages</code> 字段分支处理，写兼容测试</td>
 </tr>
 <tr>
-<td>拖拽跨页重构</td>
+<td>跨页移动</td>
 <td>排序功能回归</td>
-<td>保留原有组内排序接口，跨页只新增接口，不改旧接口</td>
+<td>v1.2 先只做「移动到页面」菜单，跨页拖拽延后</td>
 </tr>
 <tr>
 <td>v1.2 范围过大</td>
@@ -520,7 +530,7 @@
 </tbody>
 </table>
 <hr />
-<h2 id="_12">附录：术语速查</h2>
+<h2 id="_11">附录：术语速查</h2>
 <table>
 <thead>
 <tr>

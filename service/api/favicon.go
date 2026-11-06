@@ -13,9 +13,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"firefly-panel/database"
-	"firefly-panel/global"
-	"firefly-panel/models"
+	"firefly-atlas/database"
+	"firefly-atlas/global"
+	"firefly-atlas/models"
 )
 
 var (

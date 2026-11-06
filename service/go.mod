@@ -1,4 +1,4 @@
-module firefly-panel
+module firefly-atlas
 
 go 1.23
 

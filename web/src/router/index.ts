@@ -17,7 +17,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  document.title = to.meta.title ? `${to.meta.title} · Firefly Panel` : 'Firefly Panel'
+  document.title = to.meta.title ? `${to.meta.title} · Firefly Atlas` : 'Firefly Atlas'
   if (to.name === 'login' && getToken()) {
     return { name: 'home' }
   }

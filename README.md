@@ -1,10 +1,12 @@
-# Firefly Panel v1.1.0「Aurora」
+# Firefly Atlas v1.1.1「Hygiene」
 
 一个面向私有云 / NAS / 家庭工作站的轻量导航面板。V1.1 在“开箱即用”的基础上补齐了页内弹窗、右键菜单、系统状态、在线图标、图库管理、云存储漫游、整站加密备份、服务健康探测与浏览器书签导入等实用能力，所有数据仍保存在本地 SQLite 中。
 
-> 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 私有版本，按 Vue 3 + Go 重新实现，保留原项目署名。
+`v1.1.1` 是合规与发布整理补丁：项目正式更名为 **Firefly Atlas**，补充 MIT License，修正关于页/README 致谢，并同步 GitHub Actions、GHCR 与 Docker 版本注入。
+
+> 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 二次开发版（作者 Roland），按 Vue 3 + Go 重新实现，保留原项目署名。
 >
-> 版本命名：`v1.1.0` 代号 **Aurora（极光）**。之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
+> 版本命名：`v1.1.1` 代号 **Hygiene（整理）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
 
 ## 功能
 
@@ -104,11 +106,11 @@ npm run build:copy
 
 # 3. 构建后端
 cd ..\service
-go build -trimpath -o firefly-panel.exe .
+go build -trimpath -o firefly-atlas.exe .
 
 # 4. 启动（数据目录按需修改）
 $env:DATA_DIR='..\data'
-.\firefly-panel.exe
+.\firefly-atlas.exe
 ```
 
 打开 <http://127.0.0.1:3002>，默认账号：
@@ -142,12 +144,12 @@ docker compose up -d --build
 只使用镜像：
 
 ```bash
-docker build -t firefly-panel:1.1.0 .
-docker run -d --name firefly-panel -p 3002:3002 \
+docker build -t firefly-atlas:1.1.1 .
+docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  firefly-panel:1.1.0
+  firefly-atlas:1.1.1
 ```
 
 ### 多架构镜像
@@ -157,7 +159,7 @@ docker run -d --name firefly-panel -p 3002:3002 \
 - `linux/amd64`（x86_64 服务器 / PC）
 - `linux/arm64`（树莓派、ARM NAS、Apple Silicon 等）
 
-镜像地址为 `ghcr.io/<你的 GitHub 用户名>/firefly-panel`，具体标签见工作流输出。
+镜像地址为 `ghcr.io/<你的 GitHub 用户名>/firefly-atlas`，具体标签见工作流输出。
 
 ## 开发模式
 
@@ -216,7 +218,7 @@ data/
 | Owner / Repo | 目标仓库，例如 `your-name/firefly-data` |
 | Branch | 默认 `main` |
 | Token | Personal Access Token，需 `repo` 读写权限 |
-| Base Path | 云端根目录，默认 `firefly-panel` |
+| Base Path | 云端根目录，默认 `firefly-atlas` |
 | Use CDN | 仅公开仓库建议开启 jsDelivr |
 
 图片会写入 `images/wallpapers/` 与 `images/icons/`，加密备份写入 `backups/`。GitHub Contents API 对单文件体积有限制，加密备份建议控制在 60MB 以内；更大的备份请改用 R2 / S3 或先导出到本地。
@@ -262,11 +264,11 @@ data/
 
 ### 云端加密备份
 
-在「云存储与漫游 → 加密备份」中设置密码后上传。云端备份文件位于 `backups/firefly-backup-<时间>.ffbak`，支持下载到本地、从云端还原和删除。
+在「云存储与漫游 → 加密备份」中设置密码后上传。云端备份文件位于 `backups/firefly-atlas-backup-<时间>.ffbak`，支持下载到本地、从云端还原和删除。
 
 ## PWA
 
-V1.1 内置 `manifest.webmanifest` 与 `sw.js`：
+v1.1.x 内置 `manifest.webmanifest` 与 `sw.js`：
 
 - 首页与静态资源可离线打开
 - `/api/` 请求始终走网络，不会缓存登录态或数据
@@ -278,7 +280,7 @@ Service Worker 只在生产构建中注册；开发模式不会缓存页面。
 ## 目录结构
 
 ```text
-firefly-panel/
+firefly-atlas/
 ├── .github/workflows/
 │   ├── ci.yml                # 前后端类型检查与构建
 │   └── docker-publish.yml    # amd64 / arm64 多架构镜像
@@ -320,7 +322,7 @@ firefly-panel/
 - 云存储配置与云端备份接口仅管理员可访问；云存储密钥不会进入普通用户响应。
 - 云存储 Token / Secret 保存在本地 SQLite 的 `cloud_storages` 表中，请限制数据目录权限并使用 HTTPS。
 - 整站还原会校验 ZIP 路径、解压体积与文件数量，避免路径穿越与压缩炸弹。
-- V1.1 不含 HTTPS，请通过反向代理（Nginx / Caddy / Traefik）配置 TLS 后再暴露到公网。
+- v1.1.x 不含 HTTPS，请通过反向代理（Nginx / Caddy / Traefik）配置 TLS 后再暴露到公网。
 - 建议定期备份 `data` 目录，并妥善保管云存储 Token / Secret 与备份密码。
 
 ## 兼容性
@@ -333,24 +335,29 @@ firefly-panel/
 
 - `v1.0.0`：首个可用版本
 - `v1.1.0` **Aurora**：页内弹窗、右键菜单、系统状态、图库管理、云存储、加密备份、健康探测、书签导入、PWA
-- 后续每个发布版本使用独立版本号与代号（例如 `v1.2.0 <代号>`），不再重复使用同一版本号。
+- `v1.1.1` **Hygiene**：项目更名 Firefly Atlas、补 MIT LICENSE、修正关于页/README 致谢、同步 GHCR 与 CI、Docker 版本注入、反向代理与 CORS 安全文档
+- 后续每个发布版本使用独立版本号与代号（例如 `v1.2.0 Lumen`），不再重复使用同一版本号。
 
 ### 后续方向
 
-- 图库缩略图持久化与图片压缩（当前为浏览器懒加载缩略图）
-- 图库上传审核的邮件 / Webhook 通知
-- 服务健康探测的历史曲线与告警
-- 书签导入的增量模式与文件夹映射
+- `v1.2 Lumen`：多页面与分栏、图库缩略图持久化与压缩、书签增量导入、数字快捷键 / 搜索前缀 / 版本更新提示
+- `v1.3 Sentinel`：服务状态历史与告警、自定义小组件、磁盘挂载多选、可选登录验证码
+- `v1.4 Bilingual`：中英双语（只做中文 / 英文）
 - 云存储断点续传与大文件分片（GitHub 100MB 限制）
-- 多语言（i18n）与主题包
 - 反向代理 / HTTPS 一键部署向导
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE) 发布。你可以自由使用、修改、分发和商用，但请保留版权与许可声明。
 
 ## 致谢
 
-- [sun-panel](https://github.com/hslr-s/sun-panel)：面板信息架构与交互灵感
+- [sun-panel](https://github.com/hslr-s/sun-panel)：面板信息架构与交互灵感（作者：红烧猎人）
+- [Roland 的 Firefly-Panel 二次开发版](https://github.com/mysecret2022/firefly-panel)：界面与功能思路参考
+- [Glance](https://github.com/glanceapp/glance)、[Dashy](https://github.com/Lissy93/dashy)、[Homarr](https://github.com/homarr-labs/homarr)、[Homepage](https://github.com/gethomepage/homepage)、[FlatNas](https://github.com/Garry-QD/FlatNas)：功能取舍与交互思路参考
 - [Vue](https://vuejs.org/)、[Vite](https://vite.dev/)、[Naive UI](https://www.naiveui.com/)、[Tailwind CSS](https://tailwindcss.com/)
 - [Gin](https://gin-gonic.com/)、[GORM](https://gorm.io/)、[glebarez/sqlite](https://github.com/glebarez/sqlite)
 - [MinIO Go SDK](https://github.com/minio/minio-go)：S3 / R2 兼容客户端
 - [lucide](https://lucide.dev/) 图标，[霞鹜文楷](https://github.com/lxgw/LxgwWenKai) 字体
 
-原 sun-panel 项目采用 MIT 许可，本项目保留其版权与署名。
+原 sun-panel 项目采用 MIT 许可，本项目保留其版权与署名。Firefly Atlas 的代码为独立实现，未复用上述项目的业务代码。

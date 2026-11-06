@@ -1,6 +1,6 @@
 {
-  "name": "Firefly Panel",
-  "short_name": "Firefly",
+  "name": "Firefly Atlas",
+  "short_name": "Atlas",
   "description": "面向私有云、NAS 与家庭工作站的轻量导航面板",
   "lang": "zh-CN",
   "start_url": "/",

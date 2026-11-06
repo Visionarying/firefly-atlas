@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 
-	"firefly-panel/global"
-	"firefly-panel/models"
+	"firefly-atlas/global"
+	"firefly-atlas/models"
 )
 
 // publicSettingKeys are safe to expose to unauthenticated visitors so the login

@@ -1,7 +1,7 @@
 import { chromium } from 'playwright-core'
 
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-const OUT = 'D:\\ai\\opencode\\工作区\\firefly-panel\\.refs'
+const OUT = '.refs'
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true })
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })

@@ -7,14 +7,15 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/glebarez/sqlite"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"firefly-panel/global"
-	"firefly-panel/models"
+	"firefly-atlas/global"
+	"firefly-atlas/models"
 )
 
 // Init opens the embedded SQLite database, migrates the schema and seeds defaults.
@@ -40,6 +41,7 @@ func Init() error {
 	}
 
 	seed()
+	migrateBranding()
 	return nil
 }
 
@@ -69,18 +71,18 @@ func seed() {
 			return
 		}
 		if generated {
-			log.Println("[firefly-panel] admin account created")
-			log.Printf("[firefly-panel] initial password: %s", adminPwd)
-			log.Println("[firefly-panel] change it after first login, shown only once")
+			log.Println("[firefly-atlas] admin account created")
+			log.Printf("[firefly-atlas] initial password: %s", adminPwd)
+			log.Println("[firefly-atlas] change it after first login, shown only once")
 		} else {
-			log.Println("[firefly-panel] admin account created with ADMIN_PASSWORD env")
+			log.Println("[firefly-atlas] admin account created with ADMIN_PASSWORD env")
 		}
 		seedPanel(admin.ID)
 	}
 
 	settings := []models.SystemSetting{
 		{ConfigName: "public_visit_mode", Title: "公开访客模式", Content: "0"},
-		{ConfigName: "site_title", Title: "站点标题", Content: "Firefly Panel"},
+		{ConfigName: "site_title", Title: "站点标题", Content: "Firefly Atlas"},
 		{ConfigName: "allow_register", Title: "允许注册", Content: "0"},
 		{ConfigName: "custom_css", Title: "自定义 CSS", Content: ""},
 		{ConfigName: "custom_js", Title: "自定义 JS", Content: ""},
@@ -127,7 +129,7 @@ func seedPanel(userID uint) {
 		{group.ID, "私人网盘", "https://cloud.example.com", "http://192.168.1.10:8080", "文件同步与在线预览", "C", "linear-gradient(135deg,#22d3ee,#0ea5e9)"},
 		{group2.ID, "服务器", "https://server.example.com", "", "主机监控与容器管理", "S", "linear-gradient(135deg,#a78bfa,#7c3aed)"},
 		{group2.ID, "路由器", "http://192.168.1.1", "http://192.168.1.1", "网络与设备管理", "R", "linear-gradient(135deg,#34d399,#059669)"},
-		{group2.ID, "面板设置", "https://demo.example.com", "", "Firefly Panel 文档", "F", "linear-gradient(135deg,#fbbf24,#f59e0b)"},
+		{group2.ID, "面板设置", "https://demo.example.com", "", "Firefly Atlas 文档", "F", "linear-gradient(135deg,#fbbf24,#f59e0b)"},
 	}
 	for i, d := range demos {
 		iconBytes, _ := json.Marshal(models.ItemIconIcon{
@@ -153,6 +155,29 @@ func seedPanel(userID uint) {
 		PanelJSON:        models.DefaultPanelConfig,
 		SearchEngineJSON: models.DefaultSearchEngines,
 	})
+}
+
+func migrateBranding() {
+	db := global.DB
+	// Only replace the exact old defaults. Custom titles are left untouched.
+	db.Model(&models.SystemSetting{}).
+		Where("config_name = ? AND content = ?", "site_title", "Firefly Panel").
+		Update("content", "Firefly Atlas")
+
+	var configs []models.UserConfig
+	db.Find(&configs)
+	for _, cfg := range configs {
+		next := strings.ReplaceAll(cfg.PanelJSON, `"logoText": "Firefly Panel"`, `"logoText": "Firefly Atlas"`)
+		next = strings.ReplaceAll(next, `"logoText":"Firefly Panel"`, `"logoText":"Firefly Atlas"`)
+		next = strings.ReplaceAll(next, "Firefly Panel · 私有云导航", "Firefly Atlas · 私有云导航")
+		if next != cfg.PanelJSON {
+			db.Model(&cfg).Update("panel_json", next)
+		}
+	}
+
+	db.Model(&models.ItemIcon{}).
+		Where("description = ?", "Firefly Panel 文档").
+		Update("description", "Firefly Atlas 文档")
 }
 
 func RandomToken(n int) string {

@@ -17,7 +17,7 @@ ARG TARGETARCH=amd64
 # Single source of truth for the reported version. `docker build --build-arg
 # VERSION=x.y.z` (or the compose build args) overrides it, so cutting a release
 # no longer requires editing the ldflags line by hand.
-ARG VERSION=1.1.0
+ARG VERSION=1.1.1
 ENV GOPROXY=${GOPROXY}
 COPY service/go.mod service/go.sum ./
 RUN go mod download
@@ -25,14 +25,14 @@ COPY service/ ./
 # The Go binary embeds the SPA, so the Vite output must be in place before compiling.
 COPY --from=web /app/web/dist ./router/webdist
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -buildvcs=false \
-    -ldflags="-s -w -X firefly-panel/global.Version=${VERSION}" \
-    -o /firefly-panel .
+    -ldflags="-s -w -X firefly-atlas/global.Version=${VERSION}" \
+    -o /firefly-atlas .
 
 # ---------- runtime ----------
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
-COPY --from=service /firefly-panel /app/firefly-panel
+COPY --from=service /firefly-atlas /app/firefly-atlas
 
 ENV TZ=Asia/Shanghai \
     DATA_DIR=/app/data \
@@ -41,4 +41,4 @@ ENV TZ=Asia/Shanghai \
 
 VOLUME ["/app/data"]
 EXPOSE 3002
-CMD ["/app/firefly-panel"]
+CMD ["/app/firefly-atlas"]

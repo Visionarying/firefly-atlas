@@ -13,8 +13,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"firefly-panel/api"
-	"firefly-panel/global"
+	"firefly-atlas/api"
+	"firefly-atlas/global"
 )
 
 //go:embed all:webdist
@@ -51,7 +51,7 @@ func Init() *gin.Engine {
 	// Only the deployments that list their reverse proxy in TRUSTED_PROXIES get
 	// forwarded headers honoured; everything else uses the socket address.
 	if err := r.SetTrustedProxies(trustedProxies()); err != nil {
-		log.Printf("[firefly-panel] TRUSTED_PROXIES 无效，已改为不信任任何代理: %v", err)
+		log.Printf("[firefly-atlas] TRUSTED_PROXIES 无效，已改为不信任任何代理: %v", err)
 		_ = r.SetTrustedProxies(nil)
 	}
 

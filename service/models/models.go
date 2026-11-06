@@ -94,14 +94,14 @@ type CloudStorage struct {
 
 // DefaultPanelConfig is the fallback visual configuration for a fresh install.
 const DefaultPanelConfig = `{
-  "logoText": "Firefly Panel",
+  "logoText": "Firefly Atlas",
   "logoColor": "",
   "logoFontFamily": "'LXGW WenKai', 'Microsoft YaHei', sans-serif",
   "logoGlassEffect": false,
   "headerOpacity": 100,
   "cardGlassOpacity": 45,
   "footerOffsetY": 0,
-  "footerHtml": "<span>Firefly Panel · 私有云导航</span>",
+  "footerHtml": "<span>Firefly Atlas · 私有云导航</span>",
   "iconStyle": 0,
   "maxWidth": "1280",
   "maxWidthUnit": "px",

@@ -1,5 +1,5 @@
-/* Firefly Panel service worker: offline shell + static asset cache, API stays live. */
-const CACHE = 'firefly-shell-v1'
+/* Firefly Atlas service worker: offline shell + static asset cache, API stays live. */
+const CACHE = 'firefly-atlas-shell-v1'
 const PRECACHE = ['/', '/manifest.webmanifest', '/favicon.svg', '/pwa-192.png', '/pwa-512.png']
 
 self.addEventListener('install', (event) => {

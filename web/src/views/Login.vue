@@ -63,7 +63,7 @@ async function submit() {
 
     <div class="brand">
       <span class="brand-mark"><span /></span>
-      <span class="brand-text">{{ siteTitle || 'Firefly Panel' }}</span>
+      <span class="brand-text">{{ siteTitle || 'Firefly Atlas' }}</span>
     </div>
 
     <div class="login-wrap">

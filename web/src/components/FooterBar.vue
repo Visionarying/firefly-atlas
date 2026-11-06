@@ -6,7 +6,7 @@ const panel = usePanelStore()
 const config = panel.config
 
 const html = computed(
-  () => config.footerHtml || '<span>Firefly Panel · 私有云导航</span>',
+  () => config.footerHtml || '<span>Firefly Atlas · 私有云导航</span>',
 )
 const style = computed(() => ({
   transform: `translateY(${config.footerOffsetY}px)`,

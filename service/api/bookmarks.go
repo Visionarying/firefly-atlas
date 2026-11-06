@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/html"
 
-	"firefly-panel/global"
-	"firefly-panel/models"
+	"firefly-atlas/global"
+	"firefly-atlas/models"
 )
 
 type bookmark struct {

@@ -460,7 +460,7 @@ async function exportSiteBackup() {
       throw new Error(msg)
     }
     const stamp = new Date().toISOString().slice(0, 19).replace(/\D/g, '')
-    downloadBlob(blob, `firefly-panel-full-${stamp}${siteBackupPassword.value ? '.ffbak' : '.zip'}`)
+    downloadBlob(blob, `firefly-atlas-full-${stamp}${siteBackupPassword.value ? '.ffbak' : '.zip'}`)
     message.success(siteBackupPassword.value ? '加密整站备份已导出' : '整站 ZIP 备份已导出')
   } catch (e: any) {
     message.error(e.message || '导出失败')
@@ -534,7 +534,7 @@ async function importBookmarks() {
 
 
 const publicMode = ref(panel.settings.public_visit_mode === '1')
-const siteTitle = ref(panel.settings.site_title || 'Firefly Panel')
+const siteTitle = ref(panel.settings.site_title || 'Firefly Atlas')
 
 /* ---------- advanced ---------- */
 const customCss = ref('')
@@ -642,7 +642,7 @@ watch(
   (visible) => {
     if (!visible) return
     publicMode.value = panel.settings.public_visit_mode === '1'
-    siteTitle.value = panel.settings.site_title || 'Firefly Panel'
+    siteTitle.value = panel.settings.site_title || 'Firefly Atlas'
     syncSiteSettings()
     if (active.value === 'library') void loadFiles()
     if (active.value === 'account') void loadUsers()
@@ -791,7 +791,7 @@ function emptyCloudConfig(): CloudConfig {
     enabled: false,
     provider: 'github',
     dualWrite: false,
-    github: { owner: '', repo: '', branch: 'main', token: '', basePath: 'firefly-panel', useCdn: false },
+    github: { owner: '', repo: '', branch: 'main', token: '', basePath: 'firefly-atlas', useCdn: false },
     s3: {
       endpoint: '',
       accountId: '',
@@ -1178,7 +1178,7 @@ async function logout() {
   router.push('/login')
 }
 
-const version = '1.1.0'
+const version = '1.1.1'
 </script>
 
 <template>
@@ -1196,7 +1196,7 @@ const version = '1.1.0'
         <div class="nav-brand">
           <span class="brand-dot"><span /></span>
           <div>
-            <strong>Firefly Panel</strong>
+            <strong>Firefly Atlas</strong>
             <small>系统应用</small>
           </div>
         </div>
@@ -1885,7 +1885,7 @@ const version = '1.1.0'
                 class="field mono code-area"
                 rows="6"
                 spellcheck="false"
-                placeholder="console.log('Firefly Panel ready')"
+                placeholder="console.log('Firefly Atlas ready')"
               />
               <div class="block-foot">
                 <button class="btn primary" type="button" :disabled="savingCode" @click="saveCustomCode">
@@ -2093,7 +2093,7 @@ const version = '1.1.0'
                     <div class="row compact"><div class="row-label">Owner</div><input v-model="cloudConfig.github.owner" class="field" placeholder="your-name" /></div>
                     <div class="row compact"><div class="row-label">Repo</div><input v-model="cloudConfig.github.repo" class="field" placeholder="firefly-data" /></div>
                     <div class="row compact"><div class="row-label">Branch</div><input v-model="cloudConfig.github.branch" class="field" placeholder="main" /></div>
-                    <div class="row compact"><div class="row-label">Base Path</div><input v-model="cloudConfig.github.basePath" class="field" placeholder="firefly-panel" /></div>
+                    <div class="row compact"><div class="row-label">Base Path</div><input v-model="cloudConfig.github.basePath" class="field" placeholder="firefly-atlas" /></div>
                   </div>
                   <div class="row">
                     <div><div class="row-label">Personal Access Token</div><div class="row-hint">需要 repo 读写权限，仅保存在本机数据库。</div></div>
@@ -2213,13 +2213,13 @@ const version = '1.1.0'
           <div class="about-hero">
             <div class="about-logo">F</div>
             <div>
-              <strong>Firefly Panel</strong>
-              <div class="row-hint">Version {{ version }} · V1.1「Aurora」</div>
+              <strong>Firefly Atlas</strong>
+              <div class="row-hint">Version {{ version }} · V1.1.1「Hygiene」</div>
             </div>
           </div>
 
           <div class="block">
-            <h3>V1.1「Aurora」新增</h3>
+            <h3>V1.1.0「Aurora」新增</h3>
             <div class="roadmap">
               <div class="roadmap-item"><Check :size="14" /><span>页内 iframe 弹窗、右键菜单与卡片在线状态探测</span></div>
               <div class="roadmap-item"><Check :size="14" /><span>系统状态卡片：CPU、内存、磁盘、网络与运行时间</span></div>
@@ -2250,19 +2250,19 @@ const version = '1.1.0'
           <div class="block">
             <h3>开源与致谢</h3>
             <p class="block-desc">
-              本项目基于
+              本项目的界面布局与功能思路参考了
               <a href="https://github.com/hslr-s/sun-panel" target="_blank" rel="noopener noreferrer">hslr-s/sun-panel</a>
-              的 MIT 许可进行二次开发与架构重构，保留原作者版权与署名。维护者：Roland。
+              （作者：红烧猎人）及其二次开发版（作者：Roland），代码为独立实现；同时参考了 Glance、Dashy、Homarr、Homepage 与 FlatNas 的公开思路。感谢原作者与社区的开源工作。
             </p>
           </div>
 
           <div class="block">
-            <h3>V2 候选方向</h3>
+            <h3>v1.2「Lumen」方向</h3>
             <div class="roadmap">
-              <div class="roadmap-item"><Check :size="14" /><span>多用户与子账号独立空间</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>云端漫游与加密备份</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>服务健康探测与在线状态灯</span></div>
-              <div class="roadmap-item"><Check :size="14" /><span>书签导入、浏览器插件与 PWA</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>多页面与 1 / 2 / 3 列分栏，跨页移动先采用菜单方式</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>图库缩略图持久化与 JPEG / PNG 批量压缩</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>书签增量导入：复用同名分组、更新已存在网址</span></div>
+              <div class="roadmap-item"><Check :size="14" /><span>数字快捷键、搜索前缀跳转与版本更新提示</span></div>
             </div>
           </div>
         </section>

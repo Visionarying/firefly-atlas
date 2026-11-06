@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"firefly-panel/global"
-	"firefly-panel/models"
+	"firefly-atlas/global"
+	"firefly-atlas/models"
 )
 
 func LoginInterceptor() gin.HandlerFunc {

@@ -92,7 +92,7 @@ func NewGitHub(cfg GitHubConfig) *GitHub {
 	}
 	cfg.BasePath = strings.Trim(cfg.BasePath, "/")
 	if cfg.BasePath == "" {
-		cfg.BasePath = "firefly-panel"
+		cfg.BasePath = "firefly-atlas"
 	}
 	cfg.Owner = strings.TrimSpace(cfg.Owner)
 	cfg.Repo = strings.TrimSpace(cfg.Repo)
@@ -193,7 +193,7 @@ func (g *GitHub) Upload(ctx context.Context, key string, data []byte, contentTyp
 		return "", err
 	}
 	payload := map[string]interface{}{
-		"message": "Sync " + path.Base(key) + " via Firefly Panel",
+		"message": "Sync " + path.Base(key) + " via Firefly Atlas",
 		"content": base64.StdEncoding.EncodeToString(data),
 		"branch":  g.cfg.Branch,
 	}
@@ -278,7 +278,7 @@ func (g *GitHub) Delete(ctx context.Context, key string) error {
 		return err
 	}
 	body, _ := json.Marshal(map[string]string{
-		"message": "Delete " + path.Base(key) + " via Firefly Panel",
+		"message": "Delete " + path.Base(key) + " via Firefly Atlas",
 		"sha":     sha,
 		"branch":  g.cfg.Branch,
 	})

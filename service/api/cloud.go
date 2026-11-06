@@ -21,10 +21,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	cloudstore "firefly-panel/cloud"
-	"firefly-panel/database"
-	"firefly-panel/global"
-	"firefly-panel/models"
+	cloudstore "firefly-atlas/cloud"
+	"firefly-atlas/database"
+	"firefly-atlas/global"
+	"firefly-atlas/models"
 )
 
 const cloudConfigRowID = 1
@@ -36,7 +36,7 @@ var (
 
 func init() {
 	if _, err := rand.Read(cloudImageSecret); err != nil {
-		copy(cloudImageSecret, []byte("firefly-panel-image-secret-fallback"))
+		copy(cloudImageSecret, []byte("firefly-atlas-image-secret-fallback"))
 	}
 }
 
@@ -57,7 +57,7 @@ func defaultCloudConfig() cloudstore.Config {
 		Provider: "github",
 		GitHub: cloudstore.GitHubConfig{
 			Branch:   "main",
-			BasePath: "firefly-panel",
+			BasePath: "firefly-atlas",
 		},
 		S3: cloudstore.S3Config{Region: "auto"},
 	}
@@ -656,7 +656,7 @@ func CloudUploadBackup(c *gin.Context) {
 		Fail(c, "读取加密备份失败")
 		return
 	}
-	name := "firefly-backup-" + time.Now().Format("20060102-150405") + ".ffbak"
+	name := "firefly-atlas-backup-" + time.Now().Format("20060102-150405") + ".ffbak"
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	key := "backups/" + name

@@ -12,8 +12,8 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
 
-	"firefly-panel/global"
-	"firefly-panel/models"
+	"firefly-atlas/global"
+	"firefly-atlas/models"
 )
 
 // MonitorData is a compact snapshot of the host running the panel.

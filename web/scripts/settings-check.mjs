@@ -2,7 +2,7 @@ import { chromium } from 'playwright-core'
 
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 const BASE = 'http://127.0.0.1:3002'
-const OUT = 'D:\\ai\\opencode\\工作区\\firefly-panel\\.refs'
+const OUT = '.refs'
 
 const login = await fetch(`${BASE}/api/v1/auth/login`, {
   method: 'POST',
