@@ -114,6 +114,14 @@ func seed() {
 	}
 }
 
+// EnsureDefaults re-runs the idempotent seeding. Restoring a backup from an
+// older version replaces the settings table with the keys that existed back
+// then, so settings added later (v1.3 health monitor keys, for example) would
+// otherwise disappear and their features would silently stop working.
+func EnsureDefaults() {
+	seed()
+}
+
 // SeedDemoData creates a pleasant first-run experience.
 func seedPanel(userID uint) {
 	db := global.DB

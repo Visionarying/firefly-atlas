@@ -423,6 +423,12 @@ func applySiteRestore(data *siteBackup, current *models.User, stagingUploads str
 		tx.Rollback()
 		return nil, err
 	}
+	// Restored cards get new IDs, so every old sample would be an orphan that
+	// no longer matches a card.
+	if err := tx.Where("1 = 1").Delete(&models.HealthSample{}).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
 	if err := tx.Where("1 = 1").Delete(&models.ItemIconGroup{}).Error; err != nil {
 		tx.Rollback()
 		return nil, err
@@ -637,6 +643,10 @@ func applySiteRestore(data *siteBackup, current *models.User, stagingUploads str
 	if err := tx.Commit().Error; err != nil {
 		return nil, err
 	}
+	// A backup from an older version only carries the settings that existed
+	// back then. Re-seed the idempotent defaults so features added since (for
+	// example the v1.3 health monitor keys) keep working after a restore.
+	database.EnsureDefaults()
 	reloadPublicMode()
 	return stats, nil
 }

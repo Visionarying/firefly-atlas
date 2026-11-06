@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -35,12 +36,27 @@ var (
 			if len(via) >= 5 {
 				return errors.New("重定向次数过多")
 			}
+			// Validate every hop. Checking only the first address would let a
+			// public URL redirect the server into a cloud metadata endpoint.
+			if _, err := isSafeHealthURL(req.URL.String()); err != nil {
+				return err
+			}
 			return nil
 		},
 	}
 )
 
 const healthCacheTTL = 30 * time.Second
+
+// metadataHosts are the well-known cloud metadata endpoints. Ordinary LAN and
+// loopback addresses stay allowed on purpose: probing a service next to the
+// panel is the main use case, and users may legitimately monitor 127.0.0.1.
+var metadataHosts = map[string]bool{
+	"169.254.169.254":          true,
+	"100.100.100.200":          true,
+	"metadata.google.internal": true,
+	"metadata.goog":            true,
+}
 
 func isSafeHealthURL(raw string) (*url.URL, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
@@ -50,7 +66,13 @@ func isSafeHealthURL(raw string) (*url.URL, error) {
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return nil, errors.New("仅支持 http / https 地址")
 	}
-	if u.Hostname() == "169.254.169.254" {
+	host := strings.ToLower(u.Hostname())
+	if metadataHosts[host] {
+		return nil, errors.New("不允许探测云元数据地址")
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLinkLocalUnicast() {
+		// Link-local covers 169.254.0.0/16, including IPv4-mapped forms such
+		// as ::ffff:169.254.169.254.
 		return nil, errors.New("不允许探测云元数据地址")
 	}
 	return u, nil
@@ -65,16 +87,34 @@ func checkOneHealth(ctx context.Context, raw string) healthResult {
 	}
 
 	start := time.Now()
-	req, _ := http.NewRequestWithContext(ctx, http.MethodHead, u.String(), nil)
-	req.Header.Set("User-Agent", "Firefly-Atlas-Health/1.0")
+	build := func(method string) (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, method, u.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("User-Agent", "Firefly-Atlas-Health/1.0")
+		if method == http.MethodGet {
+			req.Header.Set("Range", "bytes=0-0")
+		}
+		return req, nil
+	}
+	req, err := build(http.MethodHead)
+	if err != nil {
+		res.LatencyMs = time.Since(start).Milliseconds()
+		res.Error = err.Error()
+		return res
+	}
 	resp, err := healthHTTP.Do(req)
 	if err == nil {
 		if resp.StatusCode == http.StatusMethodNotAllowed || resp.StatusCode == http.StatusNotImplemented {
 			resp.Body.Close()
-			req, _ = http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
-			req.Header.Set("User-Agent", "Firefly-Atlas-Health/1.0")
-			req.Header.Set("Range", "bytes=0-0")
-			resp, err = healthHTTP.Do(req)
+			fallback, buildErr := build(http.MethodGet)
+			if buildErr != nil {
+				res.LatencyMs = time.Since(start).Milliseconds()
+				res.Error = buildErr.Error()
+				return res
+			}
+			resp, err = healthHTTP.Do(fallback)
 		}
 	}
 	if err != nil {

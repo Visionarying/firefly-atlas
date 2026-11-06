@@ -303,7 +303,7 @@ onUnmounted(() => {
       <div class="svc-row">
         <div>
           <div class="row-label">启用后台采样</div>
-          <div class="row-hint">关闭后不再写入新记录，已有历史仍会保留到清理日期。</div>
+          <div class="row-hint">关闭后不再自动采样；「立即检查」仍会手动写入一条记录，已有历史保留到清理日期。</div>
         </div>
         <button
           class="toggle"

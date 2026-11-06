@@ -121,7 +121,8 @@ func checkItemHealth(ctx context.Context, item models.ItemIcon) healthResult {
 }
 
 func runHealthSample(force bool) {
-	if !force && getHealthSetting("health_monitor_enabled") != "1" {
+	monitoringEnabled := getHealthSetting("health_monitor_enabled") == "1"
+	if !force && !monitoringEnabled {
 		return
 	}
 	if !healthRunMu.TryLock() {
@@ -178,7 +179,9 @@ func runHealthSample(force bool) {
 			onlineCount++
 		}
 		alert := false
-		if wasOnline, ok := previous[item.ID]; ok && wasOnline && !result.Online && !inMaintenance {
+		// A manual run while background monitoring is off may still record a
+		// sample, but it must not raise an alert the user asked not to receive.
+		if wasOnline, ok := previous[item.ID]; ok && wasOnline && !result.Online && !inMaintenance && monitoringEnabled {
 			alert = true
 		}
 		samples = append(samples, models.HealthSample{

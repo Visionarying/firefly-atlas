@@ -137,9 +137,22 @@ func SaveSettings(c *gin.Context) {
 		return
 	}
 	for _, item := range items {
-		global.DB.Model(&models.SystemSetting{}).
+		item.ConfigName = strings.TrimSpace(item.ConfigName)
+		if item.ConfigName == "" {
+			continue
+		}
+		res := global.DB.Model(&models.SystemSetting{}).
 			Where("config_name = ?", item.ConfigName).
 			Update("content", item.Content)
+		// Restoring an older backup can leave newer setting keys missing; create
+		// the row instead of reporting success while writing nothing.
+		if res.Error == nil && res.RowsAffected == 0 {
+			global.DB.Create(&models.SystemSetting{
+				ConfigName: item.ConfigName,
+				Title:      item.ConfigName,
+				Content:    item.Content,
+			})
+		}
 		if item.ConfigName == "public_visit_mode" {
 			global.PublicVisitMode = item.Content == "1"
 		}
