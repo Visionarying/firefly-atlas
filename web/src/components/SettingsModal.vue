@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { NSwitch, useDialog, useMessage } from 'naive-ui'
 import {
+  Activity,
   ArrowDown,
   ArrowUp,
   Check,
@@ -44,6 +45,7 @@ import {
 } from 'lucide-vue-next'
 import RoundCardModal from './RoundCardModal.vue'
 import PromptModal from './PromptModal.vue'
+import ServiceStatus from './ServiceStatus.vue'
 import { authApi, backupApi, cloudApi, fileApi, panelApi, settingApi, siteBackupApi, systemApi, userApi } from '@/api'
 import { useAuthStore } from '@/store/auth'
 import { usePanelStore } from '@/store/panel'
@@ -79,6 +81,7 @@ const sections = [
   { key: 'profile', label: '我的信息', icon: User },
   { key: 'style', label: '风格设置', icon: Palette },
   { key: 'groups', label: '分组管理', icon: LayoutGrid },
+  { key: 'status', label: '服务状态', icon: Activity },
   { key: 'library', label: '图库管理', icon: Images },
   { key: 'data', label: '导出导入', icon: DatabaseBackup },
   { key: 'account', label: '账号管理', icon: ShieldCheck },
@@ -1328,7 +1331,7 @@ async function logout() {
   router.push('/login')
 }
 
-const version = ref('1.2.2')
+const version = ref('1.3.0')
 const updateChecking = ref(false)
 const updateState = ref<UpdateCheck | null>(null)
 const updateError = ref('')
@@ -1783,6 +1786,11 @@ async function checkUpdates() {
               </button>
             </div>
           </div>
+        </section>
+
+        <!-- 服务状态 -->
+        <section v-else-if="active === 'status'" class="pane status-pane">
+          <ServiceStatus />
         </section>
 
         <!-- 图库管理 -->
@@ -2467,7 +2475,7 @@ async function checkUpdates() {
             <div class="about-logo">F</div>
             <div>
               <strong>Firefly Atlas</strong>
-              <div class="row-hint">Version {{ version }} · V1.2.2「Mend」</div>
+              <div class="row-hint">Version {{ version }} · V1.3.0「Sentinel」</div>
             </div>
           </div>
 

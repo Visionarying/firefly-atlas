@@ -39,6 +39,7 @@ func Init() error {
 		&models.SystemSetting{},
 		&models.File{},
 		&models.CloudStorage{},
+		&models.HealthSample{},
 	); err != nil {
 		return err
 	}
@@ -94,6 +95,10 @@ func seed() {
 		{ConfigName: "notice_title", Title: "公告标题", Content: ""},
 		{ConfigName: "notice_content", Title: "公告内容", Content: ""},
 		{ConfigName: "notice_scope", Title: "公告位置", Content: "home"},
+		{ConfigName: "health_monitor_enabled", Title: "启用状态采样", Content: "1"},
+		{ConfigName: "maintenance_enabled", Title: "启用维护窗口", Content: "0"},
+		{ConfigName: "maintenance_start", Title: "维护开始时间", Content: "02:00"},
+		{ConfigName: "maintenance_end", Title: "维护结束时间", Content: "04:00"},
 	}
 	for _, s := range settings {
 		var count int64

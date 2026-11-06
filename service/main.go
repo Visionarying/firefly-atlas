@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"firefly-atlas/api"
 	"firefly-atlas/database"
 	"firefly-atlas/global"
 	"firefly-atlas/router"
@@ -13,6 +14,7 @@ func main() {
 	if err := database.Init(); err != nil {
 		log.Fatal("database init failed: ", err)
 	}
+	api.StartHealthSampler()
 	r := router.Init()
 	log.Printf("Firefly Atlas %s listening on :%s (data: %s)", global.Version, global.Port, global.DataDir)
 	if err := r.Run(":" + global.Port); err != nil {

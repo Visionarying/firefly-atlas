@@ -152,6 +152,7 @@ func DeleteItemIcon(c *gin.Context) {
 		Fail(c, "卡片不存在")
 		return
 	}
+	global.DB.Where("item_id = ?", id).Delete(&models.HealthSample{})
 	OK(c, nil)
 }
 
@@ -244,6 +245,7 @@ func DeleteItemIconGroup(c *gin.Context) {
 		return
 	}
 	global.DB.Where("item_icon_group_id = ? AND user_id = ?", group.ID, user.ID).Delete(&models.ItemIcon{})
+	global.DB.Exec("DELETE FROM health_samples WHERE item_id NOT IN (SELECT id FROM item_icons)")
 	global.DB.Delete(&group)
 	OK(c, nil)
 }

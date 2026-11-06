@@ -8,6 +8,7 @@ import type {
   CloudSyncResult,
   FileRecord,
   HealthResult,
+  HealthStatusOverview,
   ItemGroup,
   ItemIcon,
   ItemIconPage,
@@ -97,6 +98,11 @@ export const fileApi = {
       { timeout: 600000 },
     ),
   publicIcons: () => http.get<FileRecord[]>('/system/file/public-icons'),
+}
+
+export const healthApi = {
+  overview: () => http.get<HealthStatusOverview>('/system/health/overview'),
+  run: () => http.post<{ started: boolean; running: boolean }>('/system/health/run'),
 }
 
 export const settingApi = {

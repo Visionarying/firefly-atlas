@@ -128,6 +128,8 @@ func Init() *gin.Engine {
 			auth.POST("/system/setting/save", api.SaveSettings)
 
 			auth.GET("/system/monitor", api.MonitorAuth)
+			auth.GET("/system/health/overview", api.HealthOverview)
+			auth.POST("/system/health/run", api.RunHealthSample)
 			auth.GET("/system/favicon", api.FetchFavicon)
 
 			auth.GET("/system/user/list", api.ListUsers)

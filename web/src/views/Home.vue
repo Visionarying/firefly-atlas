@@ -3,6 +3,7 @@ import { computed, h, nextTick, onMounted, onUnmounted, reactive, ref, watch } f
 import { useRouter } from 'vue-router'
 import { NDropdown, useDialog, useMessage, type DropdownOption } from 'naive-ui'
 import {
+  Activity,
   Check,
   ExternalLink,
   Globe2,
@@ -35,8 +36,9 @@ import WebViewModal from '@/components/WebViewModal.vue'
 import SystemMonitor from '@/components/SystemMonitor.vue'
 import { usePanelStore } from '@/store/panel'
 import { useAuthStore } from '@/store/auth'
-import { panelApi, systemApi } from '@/api'
+import { panelApi, systemApi, healthApi } from '@/api'
 import { normalizeUrl, openExternal } from '@/utils/url'
+import { notifyHealthAlerts } from '@/utils/healthNotify'
 import { checkForUpdate, type UpdateCheck } from '@/utils/update'
 import type { ItemGroup, ItemIcon } from '@/typings'
 
@@ -85,6 +87,12 @@ async function openPageSettings() {
   settingsShow.value = true
   await nextTick()
   settingsRef.value?.openSection('groups')
+}
+
+async function openServiceStatus() {
+  settingsShow.value = true
+  await nextTick()
+  settingsRef.value?.openSection('status')
 }
 
 const flatCurrentItems = computed(() =>
@@ -296,6 +304,17 @@ async function refreshHealth() {
   }
 }
 
+/* ---------- v1.3 service status notifications ---------- */
+async function refreshHealthAlerts() {
+  if (!auth.isLoggedIn) return
+  try {
+    const overview = await healthApi.overview()
+    notifyHealthAlerts(overview.items)
+  } catch {
+    /* notification polling is best-effort */
+  }
+}
+
 onMounted(async () => {
   window.addEventListener('keydown', onNumericShortcut)
   try {
@@ -305,7 +324,11 @@ onMounted(async () => {
       return
     }
     await refreshHealth()
-    healthTimer = window.setInterval(() => void refreshHealth(), 60000)
+    void refreshHealthAlerts()
+    healthTimer = window.setInterval(() => {
+      void refreshHealth()
+      void refreshHealthAlerts()
+    }, 60000)
     void checkUpdateNotice()
   } catch {
     if (!auth.isLoggedIn) router.replace('/login')
@@ -470,6 +493,10 @@ function onUserMenu(key: string) {
       >
         <Check v-if="panel.editMode" :size="16" />
         <Pencil v-else :size="16" />
+      </button>
+
+      <button v-if="auth.isLoggedIn" class="icon-button" title="服务状态" @click="openServiceStatus">
+        <Activity :size="16" />
       </button>
 
       <button v-if="auth.isLoggedIn" class="icon-button" title="系统设置" @click="settingsShow = true">

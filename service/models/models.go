@@ -106,6 +106,21 @@ type CloudStorage struct {
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
+// HealthSample is one periodic online check for a card. CheckedAt is stored as
+// Unix milliseconds so 24h/7d aggregation stays timezone independent.
+type HealthSample struct {
+	ID        uint  `gorm:"primaryKey" json:"id"`
+	ItemID    uint  `gorm:"index:idx_health_item_checked,priority:1" json:"itemId"`
+	Online    bool  `json:"online"`
+	Status    int   `json:"status"`
+	LatencyMs int64 `json:"latencyMs"`
+	CheckedAt int64 `gorm:"index:idx_health_item_checked,priority:2;index" json:"checkedAt"`
+	// Alert is true when this sample is an online -> offline transition that
+	// happened outside a maintenance window. The frontend notifies once per
+	// (item, checkedAt) pair.
+	Alert bool `gorm:"default:false" json:"alert"`
+}
+
 // DefaultPanelConfig is the fallback visual configuration for a fresh install.
 const DefaultPanelConfig = `{
   "logoText": "Firefly Atlas",
