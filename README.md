@@ -141,7 +141,18 @@ docker compose up -d --build
 - 停止：`docker compose down`
 - 升级：`docker compose up -d --build`
 
-只使用镜像：
+只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
+
+```bash
+docker pull ghcr.io/visionarying/firefly-atlas:1.1.1
+docker run -d --name firefly-atlas -p 3002:3002 \
+  -v "$PWD/data:/app/data" \
+  -e TZ=Asia/Shanghai \
+  --restart unless-stopped \
+  ghcr.io/visionarying/firefly-atlas:1.1.1
+```
+
+也可以本地构建：
 
 ```bash
 docker build -t firefly-atlas:1.1.1 .
