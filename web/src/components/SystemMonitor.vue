@@ -139,10 +139,10 @@ const disk = computed(() => percent(data.value?.diskPercent))
 
 <style scoped>
 .monitor {
-  width: min(980px, 100%);
-  margin: 18px auto 0;
-  padding: 14px 18px 16px;
-  border-radius: 16px;
+  width: 100%;
+  margin: 16px auto 0;
+  padding: 12px 16px 13px;
+  border-radius: 14px;
   border: 1px solid var(--glass-border);
   background: rgba(var(--glass-rgb), 0.4);
   backdrop-filter: blur(22px) saturate(160%);
@@ -156,8 +156,8 @@ const disk = computed(() => percent(data.value?.diskPercent))
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
-  padding-bottom: 9px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px dashed var(--line);
 }
 
@@ -232,16 +232,16 @@ const disk = computed(() => percent(data.value?.diskPercent))
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
 }
 
 .metric {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  gap: 5px;
+  padding: 8px 11px;
+  border-radius: 10px;
   background: rgba(var(--glass-rgb), 0.32);
   border: 1px solid var(--line);
 }
@@ -256,11 +256,11 @@ const disk = computed(() => percent(data.value?.diskPercent))
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-soft);
 }
 .metric-top strong {
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text-strong);
   font-variant-numeric: tabular-nums;
 }
@@ -270,7 +270,7 @@ const disk = computed(() => percent(data.value?.diskPercent))
 }
 
 .bar {
-  height: 5px;
+  height: 4px;
   border-radius: 999px;
   background: rgba(var(--glass-rgb), 0.55);
   overflow: hidden;
@@ -292,7 +292,7 @@ const disk = computed(() => percent(data.value?.diskPercent))
 }
 
 .metric-sub {
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
