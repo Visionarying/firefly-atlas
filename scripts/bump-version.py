@@ -8,7 +8,8 @@
     web/package.json                      "version": "x.y.z"
     web/src/components/SettingsModal.vue  const version = ref('x.y.z') 与关于页标签
     Dockerfile                            ARG VERSION=x.y.z
-    docker-compose.yml                    VERSION: "x.y.z" 与 image: firefly-atlas:x.y.z
+    docker-compose.yml                    image: ghcr.io/.../firefly-atlas:x.y.z
+    docker-compose.build.yml              VERSION: "x.y.z"
     README.md                             标题、版本命名说明与 ghcr.io 拉取地址
 
 CHANGELOG 与 ROADMAP 里的历史版本号不会被改动。
@@ -29,8 +30,8 @@ RULES = [
     ("web/src/components/SettingsModal.vue", r"(const version = ref\(')[^']*('\))", r"\g<1>{v}\g<2>", "关于页版本号"),
     ("web/src/components/SettingsModal.vue", r"(Version \{\{ version \}\} · V)\d+\.\d+\.\d+", r"\g<1>{v}", "关于页版本标签"),
     ("Dockerfile", r"(ARG VERSION=)\d+\.\d+\.\d+", r"\g<1>{v}", "镜像构建默认版本"),
-    ("docker-compose.yml", r'(VERSION:\s*)"[^"]*"', r'\g<1>"{v}"', "compose 构建参数"),
-    ("docker-compose.yml", r"(image:\s*firefly-atlas:)[^\s]+", r"\g<1>{v}", "compose 镜像标签"),
+    ("docker-compose.yml", r"(image:\s*ghcr\.io/visionarying/firefly-atlas:)\d+\.\d+\.\d+", r"\g<1>{v}", "compose 镜像标签"),
+    ("docker-compose.build.yml", r'(VERSION:\s*)"[^"]*"', r'\g<1>"{v}"', "compose 本地构建参数"),
     ("README.md", r"(?m)^(# Firefly Atlas v)\d+\.\d+\.\d+", r"\g<1>{v}", "README 标题"),
     ("README.md", r"(版本命名：`v)\d+\.\d+\.\d+(` 代号)", r"\g<1>{v}\g<2>", "README 版本命名说明"),
     ("README.md", r"(firefly-atlas:)\d+\.\d+\.\d+", r"\g<1>{v}", "文档里的拉取地址"),

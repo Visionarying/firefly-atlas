@@ -1,0 +1,29 @@
+# 从当前源码本地构建并启动（需要 Docker 构建环境，可选）。
+#   docker compose -f docker-compose.build.yml up -d --build
+name: firefly-atlas
+
+services:
+  firefly-atlas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: "1.3.2"
+    image: firefly-atlas:local
+    container_name: firefly-atlas
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      TZ: Asia/Shanghai
+      DATA_DIR: /app/data
+      PORT: "3002"
+      # ADMIN_PASSWORD: "change-me"
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3002/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

@@ -205,13 +205,25 @@ docker logs -f firefly-atlas
 
 #### 7. 用 Docker Compose（可选）
 
-仓库自带 `docker-compose.yml`，默认端口 `3002`、数据卷 `./data`：
+仓库自带两份 compose 文件，按需要选一份：
+
+| 文件 | 用途 |
+| --- | --- |
+| `docker-compose.yml` | **直接用 GHCR 上的现成镜像**（推荐，不需要构建） |
+| `docker-compose.build.yml` | 从当前源码本地构建（需要 Docker 构建环境） |
 
 ```bash
-docker compose up -d          # 启动（本地没有镜像时会自动构建一次）
-docker compose up -d --build  # 强制从当前源码重新构建
-docker compose down           # 停止并删除容器（数据卷保留）
+# 用现成镜像启动
+docker compose up -d
+
+# 或者：从源码构建后启动
+docker compose -f docker-compose.build.yml up -d --build
+
+# 停止并删除容器（./data 数据保留）
+docker compose down
 ```
+
+默认端口 `3002`、数据卷 `./data`。端口被占用时，把 `docker-compose.yml` 里的 `- "3002:3002"` 改成 `- "13002:3002"`。
 
 #### 8. 镜像标签怎么选
 
