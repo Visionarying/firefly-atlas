@@ -118,11 +118,126 @@
 
 ## 快速开始
 
-### 方式一：本地运行（Windows）
+> **只想用、不想编译？** 直接看「方式一：Docker」，两条命令就能跑起来，不需要安装 Go 或 Node。
+
+### 方式一：Docker（推荐）
+
+镜像由 GitHub Actions 自动构建并推送到 GHCR，支持 `linux/amd64` 与 `linux/arm64`（x86 服务器、ARM NAS、树莓派、Apple Silicon 都可用）。
+
+#### 1. 拉取并启动
+
+```bash
+docker pull ghcr.io/visionarying/firefly-atlas:1.3.2
+
+docker run -d --name firefly-atlas \
+  -p 3002:3002 \
+  -v "$PWD/data:/app/data" \
+  -e TZ=Asia/Shanghai \
+  --restart unless-stopped \
+  ghcr.io/visionarying/firefly-atlas:1.3.2
+```
+
+Windows PowerShell 把数据卷路径改成 `${PWD}\data:/app/data`：
+
+```powershell
+docker run -d --name firefly-atlas `
+  -p 3002:3002 `
+  -v "${PWD}\data:/app/data" `
+  -e TZ=Asia/Shanghai `
+  --restart unless-stopped `
+  ghcr.io/visionarying/firefly-atlas:1.3.2
+```
+
+> **镜像名必须是 `firefly-atlas`。** 旧包 `ghcr.io/visionarying/firefly-panel` 停在 v1.1.0，已删除，请勿使用。
+
+#### 2. 首次登录
+
+1. 浏览器打开 `http://服务器IP:3002`
+2. 用户名 `admin`
+3. 密码是首次启动时随机生成的，打印在容器日志里：
+
+```bash
+docker logs firefly-atlas 2>&1 | grep "initial password"
+```
+
+```powershell
+docker logs firefly-atlas 2>&1 | Select-String "initial password"
+```
+
+也可以首次启动时直接指定密码：在 `docker run` 里加一行 `-e ADMIN_PASSWORD=你的密码`（只在首次初始化时生效）。
+
+> 首次登录后请立即在「系统应用 → 我的信息」修改密码。
+
+#### 3. 端口、数据目录与环境变量
+
+| 项目 | 说明 |
+| --- | --- |
+| `-v "$PWD/data:/app/data"` | **唯一需要持久化的目录**，包含 `database.db` 与 `uploads/`。不挂载的话，删除容器等于丢数据 |
+| `-p 3002:3002` | 冒号左边是宿主端口，可改成 `-p 8080:3002`；容器内固定监听 3002 |
+| `-e TZ=Asia/Shanghai` | 时区，影响日志时间与「维护窗口」的判定 |
+| `-e ADMIN_PASSWORD=...` | 仅首次初始化生效，用于指定管理员密码 |
+| `-e DATA_DIR=/app/data` | 容器内数据目录，默认值，一般不用改 |
+
+#### 4. 升级到新版本
+
+```bash
+docker pull ghcr.io/visionarying/firefly-atlas:1.3.2
+docker stop firefly-atlas
+docker rm firefly-atlas
+# 再用第 1 步的 docker run 启动，-v 指向同一个 data 目录
+```
+
+数据卷保持不变。启动时会自动迁移数据库结构，迁移前会在数据目录生成 `database.db.bak-<时间戳>`；想更稳妥，先复制一份 `data/`。
+
+#### 5. 验证是否正常
+
+```bash
+curl http://127.0.0.1:3002/api/v1/health
+# {"status":"ok","version":"1.3.2"}
+
+docker logs -f firefly-atlas
+```
+
+#### 6. 备份与迁移
+
+- 最直接：停止容器，把宿主机的 `data/` 整个复制走
+- 或在面板「系统设置 → 导出导入」里做整站 ZIP 备份
+
+#### 7. 用 Docker Compose（可选）
+
+仓库自带 `docker-compose.yml`，默认端口 `3002`、数据卷 `./data`：
+
+```bash
+docker compose up -d          # 启动（本地没有镜像时会自动构建一次）
+docker compose up -d --build  # 强制从当前源码重新构建
+docker compose down           # 停止并删除容器（数据卷保留）
+```
+
+#### 8. 镜像标签怎么选
+
+| 标签 | 含义 | 建议 |
+| --- | --- | --- |
+| `1.3.2` | 固定版本 | **生产环境用这个**，不会意外升级 |
+| `1.3` | 1.3.x 系列的最新补丁 | 想自动收补丁可以用 |
+| `latest` | 跟随 `main` 分支，可能包含未发布的提交 | 只适合尝鲜 |
+| `main` | 同上，分支构建 | 一般不直接用 |
+
+#### 9. Docker 常见问题
+
+| 现象 | 原因与处理 |
+| --- | --- |
+| 容器起来了但网页打不开 | 端口被占用：`docker logs firefly-atlas` 看是否绑定失败；换 `-p 8080:3002` 再试 |
+| 登录提示密码错误 | 密码是首次启动生成的，用第 2 步的命令查看；若启动时设过 `ADMIN_PASSWORD`，用那个 |
+| 重建容器后数据没了 | 启动时没挂载 `/app/data`，按第 1 步带上 `-v` |
+| `docker pull` 报 `denied` | 镜像名写成了旧的 `firefly-panel`，改成 `firefly-atlas` |
+| ARM 设备能跑吗 | 能，镜像已包含 `linux/arm64`，直接 pull 即可 |
+| 想换端口 | 只改 `-p` 左边，例如 `-p 8080:3002`，容器内仍是 3002 |
+
+### 方式二：本地运行（Windows，源码构建）
 
 > **从 GitHub 下载的是源码，不是能直接运行的程序。**
 > 仓库和源码包里**不含** `Firefly Atlas.exe`、快捷方式，也不含前端构建产物 `service/router/webdist`。
-> 想在本机跑起来，必须先按下面 1–3 步构建一次；只想直接用，请走「方式二」拉取现成镜像。
+> 想在本机跑起来，必须先按下面 1–3 步构建一次；只想直接用，请走上面的「方式一：Docker」。
 
 前置：Node.js 18+、Go 1.23+。
 
@@ -177,50 +292,6 @@ $env:DATA_DIR='..\data'
 cd ..
 .\scripts\build.ps1
 ```
-
-### 方式二：Docker Compose（推荐部署）
-
-```bash
-docker compose up -d --build
-```
-
-- 访问：<http://服务器IP:3002>
-- 数据卷：`./data`（包含 `database.db` 与 `uploads/`）
-- 停止：`docker compose down`
-- 升级：`docker compose up -d --build`
-
-只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
-
-> **注意地址**：镜像名称是 `firefly-atlas`。`ghcr.io/visionarying/firefly-panel` 是更名前的旧包，停在 v1.1.0，请勿使用。
-
-```bash
-docker pull ghcr.io/visionarying/firefly-atlas:1.3.2
-docker run -d --name firefly-atlas -p 3002:3002 \
-  -v "$PWD/data:/app/data" \
-  -e TZ=Asia/Shanghai \
-  --restart unless-stopped \
-  ghcr.io/visionarying/firefly-atlas:1.3.2
-```
-
-也可以本地构建：
-
-```bash
-docker build -t firefly-atlas:1.3.2 .
-docker run -d --name firefly-atlas -p 3002:3002 \
-  -v "$PWD/data:/app/data" \
-  -e TZ=Asia/Shanghai \
-  --restart unless-stopped \
-  firefly-atlas:1.3.2
-```
-
-### 多架构镜像
-
-仓库内置 GitHub Actions 工作流，推送 `v*.*.*` 标签或 `main` 分支时会自动构建：
-
-- `linux/amd64`（x86_64 服务器 / PC）
-- `linux/arm64`（树莓派、ARM NAS、Apple Silicon 等）
-
-镜像地址为 `ghcr.io/<你的 GitHub 用户名>/firefly-atlas`，具体标签见工作流输出。
 
 ## 开发模式
 
