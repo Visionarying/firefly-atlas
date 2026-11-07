@@ -1,8 +1,15 @@
 # Firefly Atlas v1.3.2「Sentinel」
 
+> [!WARNING]
+> **镜像地址已变更，旧地址请勿下载。**
+>
+> 项目已从 `firefly-panel` 更名为 `firefly-atlas`。旧镜像 `ghcr.io/visionarying/firefly-panel` 仍停留在 **v1.1.0**，已停止维护；从旧链接拉取会得到过时版本。
+>
+> 请使用：`docker pull ghcr.io/visionarying/firefly-atlas:1.3.2`
+
 一个面向私有云 / NAS / 家庭工作站的轻量导航面板。V1.2 在 V1.1 的基础上补齐多页面与分栏、图库缩略图与压缩、书签增量导入、数字快捷键、搜索前缀和版本更新提示，所有数据仍保存在本地 SQLite 中。
 
-`v1.3.1` 是服务状态历史与告警版：后台每 5 分钟采样卡片在线状态，按 24 小时聚合出在线率，状态从在线变为离线时用浏览器通知提醒一次，并支持维护窗口与 7 天历史保留。本版同时把系统状态条改得更扁，并让卡片行在宽屏下居中。
+`v1.3.2` 是服务状态历史与告警版：后台每 5 分钟采样卡片在线状态，按 24 小时聚合出在线率，状态从在线变为离线时用浏览器通知提醒一次，并支持维护窗口与 7 天历史保留。同时包含系统状态条扁平化、卡片行居中，以及本地构建链与版本号同步的修复。
 
 > 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 二次开发版（作者 Roland），按 Vue 3 + Go 重新实现，保留原项目署名。
 >
@@ -183,6 +190,8 @@ docker compose up -d --build
 - 升级：`docker compose up -d --build`
 
 只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
+
+> **注意地址**：镜像名称是 `firefly-atlas`。`ghcr.io/visionarying/firefly-panel` 是更名前的旧包，停在 v1.1.0，请勿使用。
 
 ```bash
 docker pull ghcr.io/visionarying/firefly-atlas:1.3.2
