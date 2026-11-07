@@ -113,6 +113,10 @@
 
 ### 方式一：本地运行（Windows）
 
+> **从 GitHub 下载的是源码，不是能直接运行的程序。**
+> 仓库和源码包里**不含** `Firefly Atlas.exe`、快捷方式，也不含前端构建产物 `service/router/webdist`。
+> 想在本机跑起来，必须先按下面 1–3 步构建一次；只想直接用，请走「方式二」拉取现成镜像。
+
 前置：Node.js 18+、Go 1.23+。
 
 ```powershell
@@ -123,7 +127,7 @@ npm install
 # 2. 构建前端并同步到 Go embed 目录
 npm run build:copy
 
-# 3. 构建后端
+# 3. 构建后端（必须在第 2 步之后；跳过第 2 步会报 no matching files found）
 cd ..\service
 go build -trimpath -o firefly-atlas.exe .
 
@@ -135,7 +139,17 @@ $env:DATA_DIR='..\data'
 > **不要直接双击 `service\firefly-atlas.exe`。**  
 > 它会把当前目录当作数据目录，而且如果 3002 端口已有实例，会直接闪退。  
 > 在 Windows 上请双击根目录的 **`Firefly Atlas` 快捷方式**（带应用图标）：它会自动使用根目录 `data\`、检测端口并在实例已运行时直接打开浏览器。  
-> 如果快捷方式丢失，运行 `powershell -ExecutionPolicy Bypass -File scripts\create-shortcut.ps1` 重建；启动器本体是根目录的 `Firefly Atlas.exe`（由 `scripts\build-launcher.ps1` 构建）。
+> 刚下载源码包时，根目录并没有 `Firefly Atlas.exe` 和快捷方式，需要先生成：
+>
+> ```powershell
+> # 1. 生成启动器本体 Firefly Atlas.exe
+> .\scripts\build-launcher.ps1
+>
+> # 2. 生成带图标的快捷方式
+> .\scripts\create-shortcut.ps1
+> ```
+>
+> 如果提示「禁止运行脚本」，先执行 `Set-ExecutionPolicy -Scope Process Bypass` 再重试。
 
 打开 <http://127.0.0.1:3002>，默认账号：
 
