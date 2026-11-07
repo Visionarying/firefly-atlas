@@ -1,13 +1,14 @@
 # 更新日志
 
-## 未发布（v1.3.2 候选）
+## v1.3.2（2026-11-07）
 
-发布流程与本地构建修复。
+发布流程与本地构建修复，程序功能与 v1.3.1 一致。
 
-- 修复 `npm run build:copy` 在部分 Windows + Node 22 环境下静默失败：`fs.cpSync` 会让 Node 进程以退出码 127 中断且不抛异常，`service/router/webdist` 留在空目录状态，随后 `go build` 报 `pattern all:webdist: no matching files found`。同步脚本改为逐文件复制并校验产物
+- 修复 `npm run build:copy` 在部分 Windows + Node 22 环境下静默失败：`fs.cpSync` 会让 Node 进程以退出码 127 中断且不抛异常，`service/router/webdist` 留在空目录状态，随后 `go build` 报 `pattern all:webdist: no matching files found`。同步脚本改为逐文件复制并强制校验 `index.html` 产物
 - 修复 `Dockerfile` 与 `docker-compose.yml` 里残留的 `1.1.2` 版本号。此前用 `docker compose up -d --build` 构建，镜像内版本会显示成 `1.1.2`
-- 新增 `scripts/bump-version.py`，一条命令同步后端、前端、Dockerfile、compose 与 README 共 6 处版本号
-- README 明确说明「从 GitHub 下载的是源码，需要构建」，并修正启动器与快捷方式的生成顺序（先生成 `Firefly Atlas.exe`，再生成快捷方式）
+- 新增 `scripts/bump-version.py`，一条命令同步后端、前端、关于页、Dockerfile、compose 与 README 共 10 处版本号
+- README 明确说明「从 GitHub 下载的是源码，需要构建」，补齐启动器与快捷方式的生成步骤，并修正命令的目录位置
+- CI 增加 `go test ./...`
 
 ## v1.3.1（2026-11-07）
 

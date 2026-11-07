@@ -17,7 +17,7 @@ ARG TARGETARCH=amd64
 # Single source of truth for the reported version. `docker build --build-arg
 # VERSION=x.y.z` (or the compose build args) overrides it, so cutting a release
 # no longer requires editing the ldflags line by hand.
-ARG VERSION=1.3.1
+ARG VERSION=1.3.2
 ENV GOPROXY=${GOPROXY}
 COPY service/go.mod service/go.sum ./
 RUN go mod download

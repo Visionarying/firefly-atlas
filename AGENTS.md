@@ -57,8 +57,8 @@ powershell -ExecutionPolicy Bypass -File scripts\build-launcher.ps1
 
 ## 当前阶段
 
-- 已发布：`v1.3.1「Sentinel」`（服务状态采样与告警 + 系统状态条扁平化）。
-- 镜像：`ghcr.io/visionarying/firefly-atlas:1.3.1`（`linux/amd64` + `linux/arm64`）。
-- 线上进程与磁盘二进制均为 `v1.3.1`，数据目录 `data/`。
-- 下一版本：`v1.3.2`，自定义小组件与 v1.3.0/v1.3.1 遗留项，见 `docs/v1.3-handoff.md` 第九节。
+- 已发布：`v1.3.2「Sentinel」`（服务状态采样与告警 + 界面修整 + 构建链修复）。
+- 镜像：`ghcr.io/visionarying/firefly-atlas:1.3.2`（`linux/amd64` + `linux/arm64`）。
+- 线上进程与磁盘二进制均为 `v1.3.2`，数据目录 `data/`。
+- 下一版本：`v1.4.0「Bilingual」`；`v1.3.x` 遗留项见 `docs/v1.3-handoff.md` 第九节。
 - 详细交接：`docs/v1.3-handoff.md`。

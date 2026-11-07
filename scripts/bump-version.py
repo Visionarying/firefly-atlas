@@ -4,11 +4,12 @@
     python scripts/bump-version.py 1.3.2
 
 会同步这几处：
-    service/global/global.go   Version = "x.y.z"
-    web/package.json           "version": "x.y.z"
-    Dockerfile                 ARG VERSION=x.y.z
-    docker-compose.yml         VERSION: "x.y.z" 与 image: firefly-atlas:x.y.z
-    README.md                  ghcr.io/.../firefly-atlas:x.y.z
+    service/global/global.go              Version = "x.y.z"
+    web/package.json                      "version": "x.y.z"
+    web/src/components/SettingsModal.vue  const version = ref('x.y.z') 与关于页标签
+    Dockerfile                            ARG VERSION=x.y.z
+    docker-compose.yml                    VERSION: "x.y.z" 与 image: firefly-atlas:x.y.z
+    README.md                             标题、版本命名说明与 ghcr.io 拉取地址
 
 CHANGELOG 与 ROADMAP 里的历史版本号不会被改动。
 """
@@ -25,9 +26,13 @@ ROOT = Path(__file__).resolve().parent.parent
 RULES = [
     ("service/global/global.go", r'(Version\s*=\s*)"[^"]*"', r'\g<1>"{v}"', "后端默认版本"),
     ("web/package.json", r'("version"\s*:\s*)"[^"]*"', r'\g<1>"{v}"', "前端包版本"),
+    ("web/src/components/SettingsModal.vue", r"(const version = ref\(')[^']*('\))", r"\g<1>{v}\g<2>", "关于页版本号"),
+    ("web/src/components/SettingsModal.vue", r"(Version \{\{ version \}\} · V)\d+\.\d+\.\d+", r"\g<1>{v}", "关于页版本标签"),
     ("Dockerfile", r"(ARG VERSION=)\d+\.\d+\.\d+", r"\g<1>{v}", "镜像构建默认版本"),
     ("docker-compose.yml", r'(VERSION:\s*)"[^"]*"', r'\g<1>"{v}"', "compose 构建参数"),
     ("docker-compose.yml", r"(image:\s*firefly-atlas:)[^\s]+", r"\g<1>{v}", "compose 镜像标签"),
+    ("README.md", r"(?m)^(# Firefly Atlas v)\d+\.\d+\.\d+", r"\g<1>{v}", "README 标题"),
+    ("README.md", r"(版本命名：`v)\d+\.\d+\.\d+(` 代号)", r"\g<1>{v}\g<2>", "README 版本命名说明"),
     ("README.md", r"(firefly-atlas:)\d+\.\d+\.\d+", r"\g<1>{v}", "文档里的拉取地址"),
 ]
 
@@ -40,7 +45,7 @@ def main() -> None:
     version = sys.argv[1]
     print(f"目标版本: {version}\n")
 
-    changed = 0
+    changed_files: set[str] = set()
     skipped = 0
     for rel, pattern, template, label in RULES:
         path = ROOT / rel
@@ -62,10 +67,10 @@ def main() -> None:
             continue
 
         path.write_bytes(new_text.encode("utf-8"))
+        changed_files.add(rel)
         print(f"  已更新 {rel} · {label}（{count} 处）")
-        changed += 1
 
-    print(f"\n完成：改动 {changed} 个文件，{skipped} 处未匹配。")
+    print(f"\n完成：改动 {len(changed_files)} 个文件，{skipped} 处未匹配。")
     if skipped:
         print("有未匹配项，请人工核对后再提交。")
         raise SystemExit(1)

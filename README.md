@@ -1,4 +1,4 @@
-# Firefly Atlas v1.3.1「Sentinel」
+# Firefly Atlas v1.3.2「Sentinel」
 
 一个面向私有云 / NAS / 家庭工作站的轻量导航面板。V1.2 在 V1.1 的基础上补齐多页面与分栏、图库缩略图与压缩、书签增量导入、数字快捷键、搜索前缀和版本更新提示，所有数据仍保存在本地 SQLite 中。
 
@@ -6,7 +6,7 @@
 
 > 视觉与交互参考了 [sun-panel](https://github.com/hslr-s/sun-panel)（MIT）以及朋友的 Firefly-Panel 二次开发版（作者 Roland），按 Vue 3 + Go 重新实现，保留原项目署名。
 >
-> 版本命名：`v1.3.1` 代号 **Sentinel（哨兵）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
+> 版本命名：`v1.3.2` 代号 **Sentinel（哨兵）**。项目中文名仍可称“萤火导航”，英文名统一为 **Firefly Atlas**；之后每个发布版本都会使用新的版本号与代号，避免功能批次混淆。
 
 ## 功能
 
@@ -139,9 +139,11 @@ $env:DATA_DIR='..\data'
 > **不要直接双击 `service\firefly-atlas.exe`。**  
 > 它会把当前目录当作数据目录，而且如果 3002 端口已有实例，会直接闪退。  
 > 在 Windows 上请双击根目录的 **`Firefly Atlas` 快捷方式**（带应用图标）：它会自动使用根目录 `data\`、检测端口并在实例已运行时直接打开浏览器。  
-> 刚下载源码包时，根目录并没有 `Firefly Atlas.exe` 和快捷方式，需要先生成：
+> 刚下载源码包时，根目录并没有 `Firefly Atlas.exe` 和快捷方式，需要先生成（先 `cd ..` 回到仓库根目录）：
 >
 > ```powershell
+> cd ..
+>
 > # 1. 生成启动器本体 Firefly Atlas.exe
 > .\scripts\build-launcher.ps1
 >
@@ -162,9 +164,10 @@ $env:DATA_DIR='..\data'
 >
 > 也可以通过 `ADMIN_PASSWORD` 环境变量在首次初始化时指定密码。
 
-也可以使用根目录脚本一键构建：
+也可以在仓库根目录用脚本一键构建（前端 + 后端，等价于上面 1–3 步）：
 
 ```powershell
+cd ..
 .\scripts\build.ps1
 ```
 
@@ -182,23 +185,23 @@ docker compose up -d --build
 只使用镜像（推荐直接拉取 GHCR，无需本地构建）：
 
 ```bash
-docker pull ghcr.io/visionarying/firefly-atlas:1.3.1
+docker pull ghcr.io/visionarying/firefly-atlas:1.3.2
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  ghcr.io/visionarying/firefly-atlas:1.3.1
+  ghcr.io/visionarying/firefly-atlas:1.3.2
 ```
 
 也可以本地构建：
 
 ```bash
-docker build -t firefly-atlas:1.3.1 .
+docker build -t firefly-atlas:1.3.2 .
 docker run -d --name firefly-atlas -p 3002:3002 \
   -v "$PWD/data:/app/data" \
   -e TZ=Asia/Shanghai \
   --restart unless-stopped \
-  firefly-atlas:1.3.1
+  firefly-atlas:1.3.2
 ```
 
 ### 多架构镜像
